@@ -67,6 +67,7 @@
 			buildPhases = (
 				CBFAB4D92EA55D5F006654AB /* Sources */,
 				CBFAB4DA2EA55D5F006654AB /* Frameworks */,
+				0E403695034743E0B4C6535A /* SwiftLint */,
 				CBFAB4DB2EA55D5F006654AB /* Resources */,
 			);
 			buildRules = (
@@ -127,6 +128,26 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		0E403695034743E0B4C6535A /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Scripts/run-swiftlint.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		CBFAB4D92EA55D5F006654AB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -136,6 +157,7 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
 
 /* Begin XCBuildConfiguration section */
 		CBFAB4F12EA55D61006654AB /* Debug */ = {

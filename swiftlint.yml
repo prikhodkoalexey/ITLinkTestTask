@@ -1,0 +1,43 @@
+included:
+  - ITLinkTestTask
+
+disabled_rules:
+  - trailing_whitespace
+  - redundant_void_return
+
+opt_in_rules:
+  - empty_count
+  - force_unwrapping
+  - force_try
+
+line_length:
+  warning: 120
+  error: 140
+
+identifier_name:
+  min_length:
+    warning: 2
+  max_length:
+    warning: 30
+    error: 40
+  allowed_symbols: []
+  validates_start_with_lowercase: true
+  excluded: [id, URL, x, y, _]
+
+type_name:
+  max_length:
+    warning: 40
+    error: 50
+  min_length: 3
+
+function_parameter_count:
+  warning: 6
+  error: 8
+
+function_body_length:
+  warning: 40
+  error: 60
+
+file_length:
+  warning: 400
+  error: 600
