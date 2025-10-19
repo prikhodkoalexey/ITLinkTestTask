@@ -85,10 +85,10 @@ final class DefaultImageMetadataProbe: ImageMetadataProbe {
         if prefix.starts(with: [0x47, 0x49, 0x46, 0x38]) {
             return .gif
         }
-        if prefix.starts(with: [0x52, 0x49, 0x46, 0x46]) && prefix[8...11] == Array("WEBP".utf8) {
+        if prefix.starts(with: [0x52, 0x49, 0x46, 0x46]) && Array(prefix[8..<12]) == Array("WEBP".utf8) {
             return .webp
         }
-        if prefix.starts(with: [0x00, 0x00, 0x00, 0x18]) && prefix[4...7] == Array("ftyp".utf8) {
+        if prefix.starts(with: [0x00, 0x00, 0x00, 0x18]) && Array(prefix[4..<8]) == Array("ftyp".utf8) {
             return .heic
         }
         return .unknown

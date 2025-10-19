@@ -6,7 +6,18 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		CB7036A92EA58109007649F0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CBFAB4D52EA55D5F006654AB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CBFAB4DC2EA55D5F006654AB;
+			remoteInfo = ITLinkTestTask;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		CB7036A52EA58109007649F0 /* ITLinkTestTaskTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ITLinkTestTaskTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBFAB4DD2EA55D5F006654AB /* ITLinkTestTask.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ITLinkTestTask.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -21,6 +32,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		CB7036A62EA58109007649F0 /* ITLinkTestTaskTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ITLinkTestTaskTests;
+			sourceTree = "<group>";
+		};
 		CBFAB4DF2EA55D5F006654AB /* ITLinkTestTask */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -32,6 +48,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		CB7036A22EA58109007649F0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		CBFAB4DA2EA55D5F006654AB /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,6 +69,7 @@
 			isa = PBXGroup;
 			children = (
 				CBFAB4DF2EA55D5F006654AB /* ITLinkTestTask */,
+				CB7036A62EA58109007649F0 /* ITLinkTestTaskTests */,
 				CBFAB4DE2EA55D5F006654AB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				CBFAB4DD2EA55D5F006654AB /* ITLinkTestTask.app */,
+				CB7036A52EA58109007649F0 /* ITLinkTestTaskTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,13 +86,36 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		CB7036A42EA58109007649F0 /* ITLinkTestTaskTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB7036AD2EA58109007649F0 /* Build configuration list for PBXNativeTarget "ITLinkTestTaskTests" */;
+			buildPhases = (
+				CB7036A12EA58109007649F0 /* Sources */,
+				CB7036A22EA58109007649F0 /* Frameworks */,
+				CB7036A32EA58109007649F0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CB7036AA2EA58109007649F0 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CB7036A62EA58109007649F0 /* ITLinkTestTaskTests */,
+			);
+			name = ITLinkTestTaskTests;
+			packageProductDependencies = (
+			);
+			productName = ITLinkTestTaskTests;
+			productReference = CB7036A52EA58109007649F0 /* ITLinkTestTaskTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		CBFAB4DC2EA55D5F006654AB /* ITLinkTestTask */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = CBFAB4F02EA55D61006654AB /* Build configuration list for PBXNativeTarget "ITLinkTestTask" */;
 			buildPhases = (
 				CBFAB4D92EA55D5F006654AB /* Sources */,
 				CBFAB4DA2EA55D5F006654AB /* Frameworks */,
-				0E403695034743E0B4C6535A /* SwiftLint */,
+				0E403695034743E0B4C6535A /* ShellScript */,
 				CBFAB4DB2EA55D5F006654AB /* Resources */,
 			);
 			buildRules = (
@@ -94,6 +142,10 @@
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
+					CB7036A42EA58109007649F0 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = CBFAB4DC2EA55D5F006654AB;
+					};
 					CBFAB4DC2EA55D5F006654AB = {
 						CreatedOnToolsVersion = 26.0.1;
 					};
@@ -114,11 +166,19 @@
 			projectRoot = "";
 			targets = (
 				CBFAB4DC2EA55D5F006654AB /* ITLinkTestTask */,
+				CB7036A42EA58109007649F0 /* ITLinkTestTaskTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		CB7036A32EA58109007649F0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		CBFAB4DB2EA55D5F006654AB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -129,7 +189,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		0E403695034743E0B4C6535A /* SwiftLint */ = {
+		0E403695034743E0B4C6535A /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -150,6 +210,13 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		CB7036A12EA58109007649F0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		CBFAB4D92EA55D5F006654AB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -159,8 +226,55 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		CB7036AA2EA58109007649F0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CBFAB4DC2EA55D5F006654AB /* ITLinkTestTask */;
+			targetProxy = CB7036A92EA58109007649F0 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		CB7036AB2EA58109007649F0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Prikhodko.ITLinkTestTaskTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ITLinkTestTask.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ITLinkTestTask";
+			};
+			name = Debug;
+		};
+		CB7036AC2EA58109007649F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Prikhodko.ITLinkTestTaskTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ITLinkTestTask.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ITLinkTestTask";
+			};
+			name = Release;
+		};
 		CBFAB4F12EA55D61006654AB /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -345,6 +459,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		CB7036AD2EA58109007649F0 /* Build configuration list for PBXNativeTarget "ITLinkTestTaskTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB7036AB2EA58109007649F0 /* Debug */,
+				CB7036AC2EA58109007649F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		CBFAB4D82EA55D5F006654AB /* Build configuration list for PBXProject "ITLinkTestTask" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -24,11 +24,15 @@ final class DefaultRemoteGalleryService: RemoteGalleryService {
     }
 
     func refreshLinks() async throws -> LinksFileSnapshot {
-        try await performWithRetry { try await linksDataSource.fetchLinks() }
+        try await performWithRetry { [linksDataSource] in
+            try await linksDataSource.fetchLinks()
+        }
     }
 
     func metadata(for url: URL) async throws -> ImageMetadata {
-        try await performWithRetry { try await metadataProbe.metadata(for: url) }
+        try await performWithRetry { [metadataProbe] in
+            try await metadataProbe.metadata(for: url)
+        }
     }
 
     private func performWithRetry<T>(_ operation: @escaping () async throws -> T) async throws -> T {

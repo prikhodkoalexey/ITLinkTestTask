@@ -13,7 +13,7 @@ protocol HTTPClient {
     func perform(_ request: HTTPRequest) async throws -> HTTPResponse
 }
 
-enum HTTPError: Error, Equatable {
+enum HTTPError: Error {
     case invalidResponse
     case unacceptableStatus(code: Int)
     case network(URLError)

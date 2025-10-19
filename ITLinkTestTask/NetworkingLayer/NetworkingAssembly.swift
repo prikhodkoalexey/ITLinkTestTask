@@ -11,6 +11,11 @@ struct NetworkingAssembly {
         httpClient = client
         linksDataSource = DefaultLinksFileRemoteDataSource(endpoint: linksEndpoint, client: client)
         metadataProbe = DefaultImageMetadataProbe(client: client)
-        remoteService = DefaultRemoteGalleryService(linksDataSource: linksDataSource, metadataProbe: metadataProbe)
+        let reachabilityService = DefaultReachabilityService()
+        remoteService = DefaultRemoteGalleryService(
+            linksDataSource: linksDataSource,
+            metadataProbe: metadataProbe,
+            reachability: reachabilityService
+        )
     }
 }
