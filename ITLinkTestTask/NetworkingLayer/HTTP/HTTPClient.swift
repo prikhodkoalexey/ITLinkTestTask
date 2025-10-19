@@ -16,7 +16,6 @@ protocol HTTPClient {
 enum HTTPError: Error, Equatable {
     case invalidResponse
     case unacceptableStatus(code: Int)
-    case invalidContentType(expected: [String], actual: String?)
     case network(URLError)
     case cancelled
     case unknown(Error)

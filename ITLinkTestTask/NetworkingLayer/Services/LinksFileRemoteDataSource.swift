@@ -33,7 +33,8 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
         if let contentType, acceptedContentTypes.contains(where: { contentType.hasPrefix($0) }) {
             return
         }
-        throw HTTPError.invalidContentType(expected: acceptedContentTypes, actual: response.value(forHTTPHeaderField: "Content-Type"))
+        let header = response.value(forHTTPHeaderField: "Content-Type")
+        throw NetworkingError.invalidContentType(expected: acceptedContentTypes, actual: header)
     }
 
     private func parseLines(from data: Data) -> [String] {
@@ -56,12 +57,33 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
 
             if let url = URL(string: trimmed) {
                 if Self.isImageCandidate(url: url) {
-                    records.append(ImageLinkRecord(lineNumber: idx + 1, originalText: trimmed, url: url, contentKind: .image))
+                    records.append(
+                        ImageLinkRecord(
+                            lineNumber: idx + 1,
+                            originalText: trimmed,
+                            url: url,
+                            contentKind: .image
+                        )
+                    )
                 } else {
-                    records.append(ImageLinkRecord(lineNumber: idx + 1, originalText: trimmed, url: url, contentKind: .nonImageURL))
+                    records.append(
+                        ImageLinkRecord(
+                            lineNumber: idx + 1,
+                            originalText: trimmed,
+                            url: url,
+                            contentKind: .nonImageURL
+                        )
+                    )
                 }
             } else {
-                records.append(ImageLinkRecord(lineNumber: idx + 1, originalText: trimmed, url: nil, contentKind: .notURL))
+                records.append(
+                    ImageLinkRecord(
+                        lineNumber: idx + 1,
+                        originalText: trimmed,
+                        url: nil,
+                        contentKind: .notURL
+                    )
+                )
             }
         }
 
