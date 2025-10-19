@@ -97,7 +97,6 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
             .utf16LittleEndian,
             .utf16BigEndian,
             .windowsCP1251,
-            .isoLatin1,
             .ascii
         ]
         for encoding in encodings {
@@ -134,6 +133,14 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
         }
         if let query = url.query?.lowercased(), imageExtensions.contains(where: { query.contains($0) }) {
             return true
+        }
+        if let host = url.host?.lowercased(), host.contains("gstatic.com") {
+            if url.path.lowercased().contains("/images") {
+                return true
+            }
+            if let query = url.query?.lowercased(), query.contains("q=tbn") {
+                return true
+            }
         }
         return false
     }
