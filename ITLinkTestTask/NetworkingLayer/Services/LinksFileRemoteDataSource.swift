@@ -23,7 +23,7 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
     func fetchLinks() async throws -> LinksFileSnapshot {
         let response = try await client.perform(LinksFileRequest(url: endpoint))
         try validate(response: response.response)
-        let lines = parseLines(from: response.data)
+        let lines = try parseLines(from: response.data)
         let records = buildRecords(from: lines)
         return LinksFileSnapshot(sourceURL: endpoint, fetchedAt: Date(), links: records)
     }
@@ -37,11 +37,11 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
         throw NetworkingError.invalidContentType(expected: acceptedContentTypes, actual: header)
     }
 
-    private func parseLines(from data: Data) -> [String] {
-        guard let content = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .windowsCP1251) else {
-            return []
+    private func parseLines(from data: Data) throws -> [String] {
+        guard let content = decode(data: data) else {
+            throw NetworkingError.invalidEncoding
         }
-        return content.components(separatedBy: .newlines)
+        return content.components(separatedBy: CharacterSet.newlines)
     }
 
     private func buildRecords(from lines: [String]) -> [ImageLinkRecord] {
@@ -55,7 +55,7 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
                 continue
             }
 
-            if let url = URL(string: trimmed) {
+            if let url = normalize(urlString: trimmed) {
                 if Self.isImageCandidate(url: url) {
                     records.append(
                         ImageLinkRecord(
@@ -90,10 +90,46 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
         return records
     }
 
+    private func decode(data: Data) -> String? {
+        let encodings: [String.Encoding] = [
+            .utf8,
+            .utf16,
+            .utf16LittleEndian,
+            .utf16BigEndian,
+            .windowsCP1251,
+            .isoLatin1,
+            .ascii
+        ]
+        for encoding in encodings {
+            if let string = String(data: data, encoding: encoding) {
+                return string
+            }
+        }
+        return nil
+    }
+
+    private func normalize(urlString: String) -> URL? {
+        if let direct = URL(string: urlString) {
+            return direct
+        }
+        let allowed = CharacterSet.urlFragmentAllowed
+            .union(.urlHostAllowed)
+            .union(.urlPathAllowed)
+            .union(.urlQueryAllowed)
+        guard let encoded = urlString.addingPercentEncoding(withAllowedCharacters: allowed) else {
+            return nil
+        }
+        return URL(string: encoded)
+    }
+
     private static func isImageCandidate(url: URL) -> Bool {
         let imageExtensions = ["png", "jpg", "jpeg", "gif", "bmp", "webp", "heic"]
         let ext = url.pathExtension.lowercased()
         if !ext.isEmpty, imageExtensions.contains(ext) {
+            return true
+        }
+        let lowercasedPath = url.path.lowercased()
+        if imageExtensions.contains(where: { lowercasedPath.contains($0) }) {
             return true
         }
         if let query = url.query?.lowercased(), imageExtensions.contains(where: { query.contains($0) }) {
