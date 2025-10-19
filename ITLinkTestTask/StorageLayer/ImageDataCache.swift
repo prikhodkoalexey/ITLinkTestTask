@@ -104,14 +104,14 @@ actor DefaultImageDataCache: ImageDataCaching {
             options: [.skipsHiddenFiles]
         )
         guard let urls = enumerator?.compactMap({ $0 as? URL }) else { return }
-        var entries: [(url: URL, size: Int, date: Date)] = []
+        var entries: [FileEntry] = []
         var totalSize = 0
         for fileURL in urls {
             let values = try fileURL.resourceValues(forKeys: Set(resourceKeys))
             guard values.isRegularFile == true else { continue }
             let size = values.fileSize ?? 0
             let date = values.contentModificationDate ?? Date.distantPast
-            entries.append((fileURL, size, date))
+            entries.append(FileEntry(url: fileURL, size: size, date: date))
             totalSize += size
         }
         guard totalSize > limit else { return }
@@ -129,4 +129,10 @@ actor DefaultImageDataCache: ImageDataCaching {
     private func updateAccessDate(for url: URL) throws {
         try fileManager.setAttributes([.modificationDate: Date()], ofItemAtPath: url.path)
     }
+}
+
+private struct FileEntry {
+    let url: URL
+    let size: Int
+    let date: Date
 }
