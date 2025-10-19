@@ -91,25 +91,11 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
     }
 
     private func decode(data: Data) -> String? {
-        let encodings: [String.Encoding] = [
-            .utf8,
-            .utf16,
-            .utf16LittleEndian,
-            .utf16BigEndian,
-            .windowsCP1251,
-            .isoLatin1,
-            .ascii
-        ]
-        for encoding in encodings {
-            if let string = String(data: data, encoding: encoding) {
-                return string
-            }
-        }
-        return nil
+        String(data: data, encoding: .utf8)
     }
 
     private func normalize(urlString: String) -> URL? {
-        if let direct = URL(string: urlString) {
+        if let direct = URL(string: urlString), isSupportedScheme(url: direct) {
             return direct
         }
         let allowed = CharacterSet.urlFragmentAllowed
@@ -119,7 +105,18 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
         guard let encoded = urlString.addingPercentEncoding(withAllowedCharacters: allowed) else {
             return nil
         }
-        return URL(string: encoded)
+        guard let url = URL(string: encoded), isSupportedScheme(url: url) else {
+            return nil
+        }
+        return url
+    }
+
+    private func isSupportedScheme(url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased() else { return false }
+        if scheme == "http" || scheme == "https" {
+            return true
+        }
+        return false
     }
 
     private static func isImageCandidate(url: URL) -> Bool {
@@ -134,6 +131,14 @@ final class DefaultLinksFileRemoteDataSource: LinksFileRemoteDataSource {
         }
         if let query = url.query?.lowercased(), imageExtensions.contains(where: { query.contains($0) }) {
             return true
+        }
+        if let host = url.host?.lowercased(), host.contains("gstatic.com") {
+            if url.path.lowercased().contains("/images") {
+                return true
+            }
+            if let query = url.query?.lowercased(), query.contains("q=tbn") {
+                return true
+            }
         }
         return false
     }
