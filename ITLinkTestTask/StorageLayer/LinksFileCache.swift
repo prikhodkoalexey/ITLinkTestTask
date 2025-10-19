@@ -15,7 +15,7 @@ actor DefaultLinksFileCache: LinksFileCaching {
 
     init(
         store: DiskStore,
-        fileManager: FileManager = .default,
+        fileManager: FileManager = FileManager(),
         encoder: JSONEncoder = JSONEncoder(),
         decoder: JSONDecoder = JSONDecoder()
     ) {

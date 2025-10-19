@@ -1,16 +1,16 @@
 import Foundation
 
-enum DiskStoreNamespace: String, CaseIterable {
+enum DiskStoreNamespace: String, CaseIterable, Sendable {
     case links
     case thumbnails
     case originals
 }
 
-enum DiskStoreError: Error {
+enum DiskStoreError: Error, Sendable {
     case directoryCreationFailed(URL)
 }
 
-protocol DiskStore {
+protocol DiskStore: Sendable {
     func directoryURL(for namespace: DiskStoreNamespace) throws -> URL
     func fileURL(in namespace: DiskStoreNamespace, fileName: String) throws -> URL
 }

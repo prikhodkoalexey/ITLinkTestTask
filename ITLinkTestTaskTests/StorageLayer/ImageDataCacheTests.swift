@@ -65,9 +65,9 @@ final class ImageDataCacheTests: XCTestCase {
 
     private func makeEnvironment() throws -> (temp: URL, store: DiskStore, fileManager: FileManager) {
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
-        let store = try DefaultDiskStore(fileManager: .default, baseURL: temp)
-        return (temp, store, .default)
+        let fileManager = FileManager()
+        let store = try DefaultDiskStore(fileManager: fileManager, baseURL: temp)
+        return (temp, store, fileManager)
     }
 
     private func removeTempDirectory(_ url: URL) {

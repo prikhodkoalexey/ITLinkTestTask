@@ -1,14 +1,18 @@
+import Dispatch
 import Foundation
 
-final class DefaultDiskStore: DiskStore {
+final class DefaultDiskStore: DiskStore, @unchecked Sendable {
     private let fileManager: FileManager
     private let baseURL: URL
+    private let queue: DispatchQueue
 
     init(
-        fileManager: FileManager = .default,
-        baseURL: URL? = nil
+        fileManager: FileManager = FileManager(),
+        baseURL: URL? = nil,
+        queue: DispatchQueue = DispatchQueue(label: "com.itlink.diskstore", qos: .utility)
     ) throws {
         self.fileManager = fileManager
+        self.queue = queue
         if let baseURL {
             self.baseURL = baseURL
         } else {
@@ -17,28 +21,36 @@ final class DefaultDiskStore: DiskStore {
             }
             self.baseURL = cachesDirectory.appendingPathComponent("Storage", isDirectory: true)
         }
-        try ensureDirectoriesExist()
+        try ensureDirectoriesExistLocked()
     }
 
     func directoryURL(for namespace: DiskStoreNamespace) throws -> URL {
-        let namespaceURL = baseURL.appendingPathComponent(namespace.rawValue, isDirectory: true)
-        try ensureDirectory(at: namespaceURL)
-        return namespaceURL
-    }
-
-    func fileURL(in namespace: DiskStoreNamespace, fileName: String) throws -> URL {
-        let directory = try directoryURL(for: namespace)
-        return directory.appendingPathComponent(fileName, isDirectory: false)
-    }
-
-    private func ensureDirectoriesExist() throws {
-        for namespace in DiskStoreNamespace.allCases {
-            let url = baseURL.appendingPathComponent(namespace.rawValue, isDirectory: true)
-            try ensureDirectory(at: url)
+        try queue.sync {
+            try directoryURLLocked(for: namespace)
         }
     }
 
-    private func ensureDirectory(at url: URL) throws {
+    func fileURL(in namespace: DiskStoreNamespace, fileName: String) throws -> URL {
+        try queue.sync {
+            let directory = try directoryURLLocked(for: namespace)
+            return directory.appendingPathComponent(fileName, isDirectory: false)
+        }
+    }
+
+    private func directoryURLLocked(for namespace: DiskStoreNamespace) throws -> URL {
+        let namespaceURL = baseURL.appendingPathComponent(namespace.rawValue, isDirectory: true)
+        try ensureDirectoryLocked(at: namespaceURL)
+        return namespaceURL
+    }
+
+    private func ensureDirectoriesExistLocked() throws {
+        for namespace in DiskStoreNamespace.allCases {
+            let url = baseURL.appendingPathComponent(namespace.rawValue, isDirectory: true)
+            try ensureDirectoryLocked(at: url)
+        }
+    }
+
+    private func ensureDirectoryLocked(at url: URL) throws {
         if fileManager.fileExists(atPath: url.path) {
             return
         }

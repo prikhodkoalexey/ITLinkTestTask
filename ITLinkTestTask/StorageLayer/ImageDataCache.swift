@@ -40,7 +40,7 @@ actor DefaultImageDataCache: ImageDataCaching {
     init(
         store: DiskStore,
         hasher: FileNameHashing,
-        fileManager: FileManager = .default,
+        fileManager: FileManager = FileManager(),
         configuration: ImageDataCacheConfiguration = .default
     ) {
         self.store = store

@@ -6,7 +6,7 @@ final class DefaultDiskStoreTests: XCTestCase {
     func testCreatesNamespaceDirectories() throws {
         let temp = makeTempDirectory()
         defer { removeTempDirectory(temp) }
-        let store = try DefaultDiskStore(fileManager: .default, baseURL: temp)
+        let store = try DefaultDiskStore(fileManager: FileManager(), baseURL: temp)
         for namespace in DiskStoreNamespace.allCases {
             let url = try store.directoryURL(for: namespace)
             var isDir: ObjCBool = false
@@ -18,7 +18,7 @@ final class DefaultDiskStoreTests: XCTestCase {
     func testProvidesFileURLInNamespace() throws {
         let temp = makeTempDirectory()
         defer { removeTempDirectory(temp) }
-        let store = try DefaultDiskStore(fileManager: .default, baseURL: temp)
+        let store = try DefaultDiskStore(fileManager: FileManager(), baseURL: temp)
         let fileURL = try store.fileURL(in: .links, fileName: "test.bin")
         XCTAssertTrue(fileURL.path.hasSuffix("links/test.bin"))
     }
