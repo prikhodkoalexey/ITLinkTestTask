@@ -15,6 +15,11 @@ fi
 
 mkdir -p "${PROJECT_DIR}/Tools"
 
+if [ -x "${SWIFTLINT_BINARY}" ]; then
+  "${SWIFTLINT_BINARY}" --config "${CONFIG_PATH}"
+  exit 0
+fi
+
 if [ ! -d "${REPO_DIR}" ]; then
   git clone --branch "${REQUIRED_TAG}" --depth 1 "${REMOTE_URL}" "${REPO_DIR}"
 else
