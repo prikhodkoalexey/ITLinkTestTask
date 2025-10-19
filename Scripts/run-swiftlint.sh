@@ -29,3 +29,7 @@ fi
 
 swift build --package-path "${REPO_DIR}" --configuration release --target swiftlint
 "${SWIFTLINT_BINARY}" --config "${CONFIG_PATH}"
+
+if [ -n "${DERIVED_FILE_DIR:-}" ]; then
+  touch "${DERIVED_FILE_DIR}/swiftlint-stamp"
+fi
