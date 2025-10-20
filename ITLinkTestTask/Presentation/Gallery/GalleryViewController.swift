@@ -118,8 +118,26 @@ extension GalleryViewController: UICollectionViewDelegate {
         let item = currentItems[indexPath.item]
         switch item {
         case .image(let image):
+            let allImageURLs = currentItems.compactMap { galleryItem in
+                if case .image(let galleryImage) = galleryItem {
+                    return galleryImage.url
+                }
+                return nil
+            }
+            
+            let currentIndex = currentItems.firstIndex { galleryItem in
+                if case .image(let galleryImage) = galleryItem {
+                    return galleryImage.url == image.url
+                }
+                return false
+            } ?? 0
+            
             let imageViewerAssembly = ImageViewerAssembly(galleryImageLoader: imageLoader)
-            let imageViewerViewController = imageViewerAssembly.makeImageViewerViewController(imageURL: image.url)
+            let imageViewerViewController = imageViewerAssembly.makeImageViewerViewController(
+                imageURL: image.url,
+                allImageURLs: allImageURLs,
+                currentIndex: currentIndex
+            )
             navigationController?.pushViewController(imageViewerViewController, animated: true)
         case .placeholder:
             break
