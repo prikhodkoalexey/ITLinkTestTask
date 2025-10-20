@@ -2,7 +2,7 @@ import UIKit
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
-    private lazy var environment = AppEnvironment.makeDefault()
+    private lazy var environment = AppEnvironment.makeDefault(arguments: LaunchArguments.current())
 
     func scene(
         _ scene: UIScene,
