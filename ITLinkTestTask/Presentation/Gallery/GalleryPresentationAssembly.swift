@@ -8,6 +8,10 @@ struct GalleryPresentationAssembly {
     }
 
     func makeRootViewController() -> UIViewController {
-        GalleryViewController()
+        let viewModel = GalleryViewModel(
+            loadSnapshot: { try await domain.loadSnapshot.execute() },
+            refreshSnapshot: { try await domain.refreshSnapshot.execute() }
+        )
+        return GalleryViewController(viewModel: viewModel)
     }
 }
