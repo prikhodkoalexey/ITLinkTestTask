@@ -81,8 +81,7 @@ final class ImageViewerViewModel {
         do {
             let image = try await imageLoader.image(
                 for: imageURL,
-                targetSize: UIScreen.main.bounds.size,
-                scale: UIScreen.main.scale
+                variant: .original
             )
             await MainActor.run {
                 onStateChange?(.loaded(image))

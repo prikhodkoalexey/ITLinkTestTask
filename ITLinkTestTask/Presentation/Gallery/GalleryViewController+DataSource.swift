@@ -53,8 +53,7 @@ extension GalleryViewController {
             do {
                 let uiImage = try await imageLoader.image(
                     for: image.url,
-                    targetSize: targetSize,
-                    scale: scale
+                    variant: .thumbnail(targetSize: targetSize, scale: scale)
                 )
                 await MainActor.run {
                     guard
