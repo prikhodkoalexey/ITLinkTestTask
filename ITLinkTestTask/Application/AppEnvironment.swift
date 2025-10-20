@@ -3,6 +3,7 @@ import Foundation
 struct AppEnvironment {
     let networking: NetworkingAssembly
     let storage: StorageAssembly
+    let gallery: GalleryDomainAssembly
 
     static func makeDefault() -> AppEnvironment {
         do {
@@ -11,7 +12,8 @@ struct AppEnvironment {
                 fatalError("Failed to create links endpoint URL")
             }
             let networking = NetworkingAssembly(linksEndpoint: endpoint)
-            return AppEnvironment(networking: networking, storage: storage)
+            let gallery = GalleryDomainAssembly(networking: networking, storage: storage)
+            return AppEnvironment(networking: networking, storage: storage, gallery: gallery)
         } catch {
             fatalError("Failed to create storage assembly: \(error)")
         }
