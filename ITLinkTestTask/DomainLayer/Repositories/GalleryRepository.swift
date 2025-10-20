@@ -6,10 +6,26 @@ struct GalleryImage: Equatable, Hashable {
     let lineNumber: Int
 }
 
+enum GalleryPlaceholderReason: Equatable, Hashable {
+    case nonImageURL
+    case invalidContent
+}
+
+struct GalleryPlaceholder: Equatable, Hashable {
+    let originalLine: String
+    let lineNumber: Int
+    let reason: GalleryPlaceholderReason
+}
+
+enum GalleryItem: Equatable, Hashable {
+    case image(GalleryImage)
+    case placeholder(GalleryPlaceholder)
+}
+
 struct GallerySnapshot: Equatable {
     let sourceURL: URL
     let fetchedAt: Date
-    let items: [GalleryImage]
+    let items: [GalleryItem]
 
     var isEmpty: Bool { items.isEmpty }
 }

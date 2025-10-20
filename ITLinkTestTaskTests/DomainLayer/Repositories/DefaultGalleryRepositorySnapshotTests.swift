@@ -22,8 +22,17 @@ final class DefaultGalleryRepositorySnapshotTests: XCTestCase {
 
         let snapshot = try await harness.repository.loadInitialSnapshot()
 
-        XCTAssertEqual(snapshot.items.count, 1)
-        XCTAssertEqual(snapshot.items.first?.url, URL(string: "https://example.com/a.jpg"))
+        XCTAssertEqual(snapshot.items.count, 2)
+        guard case let .image(first) = snapshot.items[0] else {
+            return XCTFail("Expected image item at index 0")
+        }
+        XCTAssertEqual(first.url, URL(string: "https://example.com/a.jpg"))
+        XCTAssertEqual(first.lineNumber, 1)
+        guard case let .placeholder(second) = snapshot.items[1] else {
+            return XCTFail("Expected placeholder item at index 1")
+        }
+        XCTAssertEqual(second.reason, .nonImageURL)
+        XCTAssertEqual(second.lineNumber, 2)
         XCTAssertEqual(snapshot.sourceURL, cachedSnapshot.sourceURL)
         XCTAssertEqual(snapshot.fetchedAt, cachedSnapshot.fetchedAt)
         let refreshCount = await harness.remote.refreshCallCount()
@@ -48,7 +57,11 @@ final class DefaultGalleryRepositorySnapshotTests: XCTestCase {
 
         let snapshot = try await harness.repository.loadInitialSnapshot()
 
-        XCTAssertEqual(snapshot.items.map(\.url), [URL(string: "https://example.com/b.jpg")])
+        XCTAssertEqual(snapshot.items.count, 1)
+        guard case let .image(image) = snapshot.items[0] else {
+            return XCTFail("Expected image item")
+        }
+        XCTAssertEqual(image.url, URL(string: "https://example.com/b.jpg"))
         let refreshCount = await harness.remote.refreshCallCount()
         XCTAssertEqual(refreshCount, 1)
         let savedSnapshots = await harness.linksCache.savedSnapshots()
@@ -71,7 +84,11 @@ final class DefaultGalleryRepositorySnapshotTests: XCTestCase {
 
         let snapshot = try await harness.repository.refreshSnapshot()
 
-        XCTAssertEqual(snapshot.items.map(\.url), [URL(string: "https://example.com/c.jpg")])
+        XCTAssertEqual(snapshot.items.count, 1)
+        guard case let .image(image) = snapshot.items[0] else {
+            return XCTFail("Expected image item")
+        }
+        XCTAssertEqual(image.url, URL(string: "https://example.com/c.jpg"))
         let refreshCount = await harness.remote.refreshCallCount()
         XCTAssertEqual(refreshCount, 1)
         let savedSnapshots = await harness.linksCache.savedSnapshots()
@@ -102,22 +119,34 @@ final class DefaultGalleryRepositorySnapshotTests: XCTestCase {
         await harness.remote.enqueueRefreshResult(.success(secondSnapshot))
 
         let firstRefresh = try await harness.repository.refreshSnapshot()
-        XCTAssertEqual(firstRefresh.items.map(\.url), [URL(string: "https://example.com/a.jpg")])
+        XCTAssertEqual(firstRefresh.items.count, 1)
+        guard case let .image(firstImage) = firstRefresh.items[0] else {
+            return XCTFail("Expected image item")
+        }
+        XCTAssertEqual(firstImage.url, URL(string: "https://example.com/a.jpg"))
         let refreshCountAfterFirst = await harness.remote.refreshCallCount()
         XCTAssertEqual(refreshCountAfterFirst, 1)
 
         let cached = try await harness.repository.loadInitialSnapshot()
-        XCTAssertEqual(cached.items.map(\.url), [URL(string: "https://example.com/a.jpg")])
+        XCTAssertEqual(cached.items.count, 1)
+        guard case let .image(cachedImage) = cached.items[0] else {
+            return XCTFail("Expected image item")
+        }
+        XCTAssertEqual(cachedImage.url, URL(string: "https://example.com/a.jpg"))
         let refreshCountAfterLoad = await harness.remote.refreshCallCount()
         XCTAssertEqual(refreshCountAfterLoad, 1)
 
         let secondRefresh = try await harness.repository.refreshSnapshot()
-        XCTAssertEqual(secondRefresh.items.map(\.url), [URL(string: "https://example.com/d.jpg")])
+        XCTAssertEqual(secondRefresh.items.count, 1)
+        guard case let .image(secondImage) = secondRefresh.items[0] else {
+            return XCTFail("Expected image item")
+        }
+        XCTAssertEqual(secondImage.url, URL(string: "https://example.com/d.jpg"))
         let refreshCountAfterSecond = await harness.remote.refreshCallCount()
         XCTAssertEqual(refreshCountAfterSecond, 2)
     }
 
-    func testRefreshSnapshotFiltersNonImageRecords() async throws {
+    func testRefreshSnapshotCreatesPlaceholdersForNonImages() async throws {
         let harness = GalleryRepositoryTestHarness()
         let snapshot = makeLinksSnapshot(records: [
             makeRecord(
@@ -143,8 +172,23 @@ final class DefaultGalleryRepositorySnapshotTests: XCTestCase {
 
         let result = try await harness.repository.refreshSnapshot()
 
-        XCTAssertEqual(result.items.count, 1)
-        XCTAssertEqual(result.items.first?.lineNumber, 1)
-        XCTAssertEqual(result.items.first?.originalLine, "https://example.com/a.jpg")
+        XCTAssertEqual(result.items.count, 3)
+        guard case let .image(image) = result.items[0] else {
+            return XCTFail("Expected first item to be image")
+        }
+        XCTAssertEqual(image.lineNumber, 1)
+        XCTAssertEqual(image.originalLine, "https://example.com/a.jpg")
+        guard case let .placeholder(second) = result.items[1] else {
+            return XCTFail("Expected second item to be placeholder")
+        }
+        XCTAssertEqual(second.reason, .nonImageURL)
+        XCTAssertEqual(second.lineNumber, 2)
+        XCTAssertEqual(second.originalLine, "https://example.com")
+        guard case let .placeholder(third) = result.items[2] else {
+            return XCTFail("Expected third item to be placeholder")
+        }
+        XCTAssertEqual(third.reason, .invalidContent)
+        XCTAssertEqual(third.lineNumber, 3)
+        XCTAssertEqual(third.originalLine, "plain text")
     }
 }

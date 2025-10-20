@@ -4,6 +4,7 @@ struct AppEnvironment {
     let networking: NetworkingAssembly
     let storage: StorageAssembly
     let gallery: GalleryDomainAssembly
+    let presentation: PresentationAssembly
 
     static func makeDefault() -> AppEnvironment {
         do {
@@ -13,7 +14,13 @@ struct AppEnvironment {
             }
             let networking = NetworkingAssembly(linksEndpoint: endpoint)
             let gallery = GalleryDomainAssembly(networking: networking, storage: storage)
-            return AppEnvironment(networking: networking, storage: storage, gallery: gallery)
+            let presentation = PresentationAssembly(domain: gallery)
+            return AppEnvironment(
+                networking: networking,
+                storage: storage,
+                gallery: gallery,
+                presentation: presentation
+            )
         } catch {
             fatalError("Failed to create storage assembly: \(error)")
         }
