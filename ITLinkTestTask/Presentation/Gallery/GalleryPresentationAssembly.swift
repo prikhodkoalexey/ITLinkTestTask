@@ -12,6 +12,12 @@ struct GalleryPresentationAssembly {
             loadSnapshot: { try await domain.loadSnapshot.execute() },
             refreshSnapshot: { try await domain.refreshSnapshot.execute() }
         )
-        return GalleryViewController(viewModel: viewModel)
+        let imageLoader = GalleryImageLoader(fetchImageData: domain.fetchImageData)
+        let reachability = DefaultReachabilityService()
+        return GalleryViewController(
+            viewModel: viewModel,
+            imageLoader: imageLoader,
+            reachability: reachability
+        )
     }
 }

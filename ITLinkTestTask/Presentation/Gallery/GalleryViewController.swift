@@ -6,6 +6,8 @@ final class GalleryViewController: UIViewController {
     }
 
     private let viewModel: GalleryViewModel
+    private let imageLoader: GalleryImageLoader
+    private let reachability: ReachabilityService
 
     private let layout = UICollectionViewFlowLayout()
     private lazy var dataSource = makeDataSource()
@@ -62,9 +64,17 @@ final class GalleryViewController: UIViewController {
 
     private let refreshControl = UIRefreshControl()
     private var tasks: [Task<Void, Never>] = []
+    private var imageTasks: [IndexPath: Task<Void, Never>] = [:]
+    private var isReachabilityMonitoring = false
 
-    init(viewModel: GalleryViewModel) {
+    init(
+        viewModel: GalleryViewModel,
+        imageLoader: GalleryImageLoader,
+        reachability: ReachabilityService
+    ) {
         self.viewModel = viewModel
+        self.imageLoader = imageLoader
+        self.reachability = reachability
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -81,6 +91,7 @@ final class GalleryViewController: UIViewController {
         setupConstraints()
         bindActions()
         bindViewModel()
+        collectionView.delegate = self
     }
 
     override func viewDidLayoutSubviews() {
@@ -172,8 +183,13 @@ final class GalleryViewController: UIViewController {
             hideMessage()
         }
 
-        let shouldHideCollection = (state.isLoading && state.content == .empty) || (!statusStackView.isHidden && items.isEmpty)
-        collectionView.isHidden = shouldHideCollection
+        if case .empty = state.content, state.error != nil {
+            startReachabilityMonitoring()
+        } else {
+            stopReachabilityMonitoring()
+        }
+
+        collectionView.isHidden = state.isLoading && state.content == .empty
     }
 
     private func updateItemSize(for availableWidth: CGFloat) {
@@ -213,7 +229,12 @@ final class GalleryViewController: UIViewController {
         var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
         snapshot.appendSections([.main])
         snapshot.appendItems(items, toSection: .main)
-        dataSource.apply(snapshot, animatingDifferences: true)
+        dataSource.apply(snapshot, animatingDifferences: true) { [weak self] in
+            guard let self else { return }
+            let visible = Set(self.collectionView.indexPathsForVisibleItems)
+            self.cleanupUnusedImageTasks(validIndexPaths: visible)
+            self.preloadVisibleImages()
+        }
     }
 
     private func showMessage(_ message: String, showRetry: Bool) {
@@ -254,7 +275,8 @@ final class GalleryViewController: UIViewController {
                 break
             }
             let clampedWidth = min(max(candidateWidth, Constants.minItemWidth), Constants.maxItemWidth)
-            let penalty: CGFloat = (candidateWidth >= Constants.minItemWidth && candidateWidth <= Constants.maxItemWidth) ? 0 : 100
+            let withinBounds = candidateWidth >= Constants.minItemWidth && candidateWidth <= Constants.maxItemWidth
+            let penalty: CGFloat = withinBounds ? 0 : 100
             let score = abs(clampedWidth - targetWidth) + penalty
             if score < bestScore {
                 bestScore = score
@@ -290,6 +312,8 @@ final class GalleryViewController: UIViewController {
 
     deinit {
         tasks.forEach { $0.cancel() }
+        imageTasks.values.forEach { $0.cancel() }
+        stopReachabilityMonitoring()
     }
 }
 
@@ -309,6 +333,109 @@ private extension GalleryViewController {
     enum Item: Hashable {
         case image(GalleryImage)
         case placeholder(GalleryPlaceholder)
+    }
+}
+
+extension GalleryViewController: UICollectionViewDelegate {
+    func collectionView(
+        _ collectionView: UICollectionView,
+        willDisplay cell: UICollectionViewCell,
+        forItemAt indexPath: IndexPath
+    ) {
+        guard
+            let item = dataSource.itemIdentifier(for: indexPath),
+            case let .image(image) = item,
+            let imageCell = cell as? GalleryImageCell
+        else { return }
+        loadImage(for: image, at: indexPath, cell: imageCell)
+    }
+
+    func collectionView(
+        _ collectionView: UICollectionView,
+        didEndDisplaying cell: UICollectionViewCell,
+        forItemAt indexPath: IndexPath
+    ) {
+        imageTasks[indexPath]?.cancel()
+        imageTasks[indexPath] = nil
+    }
+}
+
+private extension GalleryViewController {
+    func loadImage(for image: GalleryImage, at indexPath: IndexPath, cell: GalleryImageCell) {
+        imageTasks[indexPath]?.cancel()
+        let targetSize = layout.itemSize == .zero
+            ? CGSize(width: Constants.maxItemWidth, height: Constants.maxItemWidth)
+            : layout.itemSize
+        let scale = view.window?.screen.scale ?? UIScreen.main.scale
+        let task = Task { [weak self, weak cell] in
+            guard let self else { return }
+            do {
+                let uiImage = try await self.imageLoader.image(
+                    for: image.url,
+                    targetSize: targetSize,
+                    scale: scale
+                )
+                await MainActor.run {
+                    guard
+                        let cell,
+                        let current = self.dataSource.itemIdentifier(for: indexPath),
+                        case let .image(currentImage) = current,
+                        currentImage == image
+                    else { return }
+                    cell.configure(image: uiImage, accessibilityLabel: image.originalLine)
+                }
+            } catch {
+                await MainActor.run {
+                    guard let cell else { return }
+                    cell.configure(image: nil, accessibilityLabel: image.originalLine)
+                }
+            }
+            await MainActor.run { [weak self] in
+                self?.imageTasks[indexPath] = nil
+            }
+        }
+        imageTasks[indexPath] = task
+    }
+
+    func cleanupUnusedImageTasks(validIndexPaths: Set<IndexPath>) {
+        let keysToCancel = imageTasks.keys.filter { !validIndexPaths.contains($0) }
+        for key in keysToCancel {
+            imageTasks[key]?.cancel()
+            imageTasks[key] = nil
+        }
+    }
+
+    func preloadVisibleImages() {
+        collectionView.layoutIfNeeded()
+        for indexPath in collectionView.indexPathsForVisibleItems {
+            guard
+                let item = dataSource.itemIdentifier(for: indexPath),
+                case let .image(image) = item,
+                let cell = collectionView.cellForItem(at: indexPath) as? GalleryImageCell,
+                imageTasks[indexPath] == nil
+            else { continue }
+            loadImage(for: image, at: indexPath, cell: cell)
+        }
+    }
+
+    func startReachabilityMonitoring() {
+        guard !isReachabilityMonitoring else { return }
+        isReachabilityMonitoring = true
+        reachability.startMonitoring { [weak self] status in
+            guard let self else { return }
+            if status == .satisfied || status == .constrained {
+                self.stopReachabilityMonitoring()
+                self.startTask { [weak self] in
+                    await self?.viewModel.retry()
+                }
+            }
+        }
+    }
+
+    func stopReachabilityMonitoring() {
+        guard isReachabilityMonitoring else { return }
+        reachability.stopMonitoring()
+        isReachabilityMonitoring = false
     }
 }
 
