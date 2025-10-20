@@ -2,9 +2,11 @@ import UIKit
 
 struct GalleryPresentationAssembly {
     private let domain: GalleryDomainAssembly
+    private let reachability: ReachabilityService
 
-    init(domain: GalleryDomainAssembly) {
+    init(domain: GalleryDomainAssembly, reachability: ReachabilityService = DefaultReachabilityService()) {
         self.domain = domain
+        self.reachability = reachability
     }
 
     func makeRootViewController() -> UIViewController {
@@ -13,7 +15,6 @@ struct GalleryPresentationAssembly {
             refreshSnapshot: { try await domain.refreshSnapshot.execute() }
         )
         let imageLoader = GalleryImageLoader(fetchImageData: domain.fetchImageData)
-        let reachability = DefaultReachabilityService()
         return GalleryViewController(
             viewModel: viewModel,
             imageLoader: imageLoader,

@@ -14,10 +14,18 @@
 			remoteGlobalIDString = CBFAB4DC2EA55D5F006654AB;
 			remoteInfo = ITLinkTestTask;
 		};
+		CB7C39E92EA672E400AB4818 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CBFAB4D52EA55D5F006654AB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CBFAB4DC2EA55D5F006654AB;
+			remoteInfo = ITLinkTestTask;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		CB7036A52EA58109007649F0 /* ITLinkTestTaskTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ITLinkTestTaskTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CB7C39E32EA672E400AB4818 /* ITLinkTestTaskUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ITLinkTestTaskUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBFAB4DD2EA55D5F006654AB /* ITLinkTestTask.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ITLinkTestTask.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -37,6 +45,11 @@
 			path = ITLinkTestTaskTests;
 			sourceTree = "<group>";
 		};
+		CB7C39E42EA672E400AB4818 /* ITLinkTestTaskUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ITLinkTestTaskUITests;
+			sourceTree = "<group>";
+		};
 		CBFAB4DF2EA55D5F006654AB /* ITLinkTestTask */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -49,6 +62,13 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		CB7036A22EA58109007649F0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CB7C39E02EA672E400AB4818 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -70,6 +90,7 @@
 			children = (
 				CBFAB4DF2EA55D5F006654AB /* ITLinkTestTask */,
 				CB7036A62EA58109007649F0 /* ITLinkTestTaskTests */,
+				CB7C39E42EA672E400AB4818 /* ITLinkTestTaskUITests */,
 				CBFAB4DE2EA55D5F006654AB /* Products */,
 			);
 			sourceTree = "<group>";
@@ -79,6 +100,7 @@
 			children = (
 				CBFAB4DD2EA55D5F006654AB /* ITLinkTestTask.app */,
 				CB7036A52EA58109007649F0 /* ITLinkTestTaskTests.xctest */,
+				CB7C39E32EA672E400AB4818 /* ITLinkTestTaskUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,6 +130,29 @@
 			productName = ITLinkTestTaskTests;
 			productReference = CB7036A52EA58109007649F0 /* ITLinkTestTaskTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		CB7C39E22EA672E400AB4818 /* ITLinkTestTaskUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CB7C39EB2EA672E400AB4818 /* Build configuration list for PBXNativeTarget "ITLinkTestTaskUITests" */;
+			buildPhases = (
+				CB7C39DF2EA672E400AB4818 /* Sources */,
+				CB7C39E02EA672E400AB4818 /* Frameworks */,
+				CB7C39E12EA672E400AB4818 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CB7C39EA2EA672E400AB4818 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CB7C39E42EA672E400AB4818 /* ITLinkTestTaskUITests */,
+			);
+			name = ITLinkTestTaskUITests;
+			packageProductDependencies = (
+			);
+			productName = ITLinkTestTaskUITests;
+			productReference = CB7C39E32EA672E400AB4818 /* ITLinkTestTaskUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 		CBFAB4DC2EA55D5F006654AB /* ITLinkTestTask */ = {
 			isa = PBXNativeTarget;
@@ -146,6 +191,10 @@
 						CreatedOnToolsVersion = 26.0.1;
 						TestTargetID = CBFAB4DC2EA55D5F006654AB;
 					};
+					CB7C39E22EA672E400AB4818 = {
+						CreatedOnToolsVersion = 26.0.1;
+						TestTargetID = CBFAB4DC2EA55D5F006654AB;
+					};
 					CBFAB4DC2EA55D5F006654AB = {
 						CreatedOnToolsVersion = 26.0.1;
 					};
@@ -167,12 +216,20 @@
 			targets = (
 				CBFAB4DC2EA55D5F006654AB /* ITLinkTestTask */,
 				CB7036A42EA58109007649F0 /* ITLinkTestTaskTests */,
+				CB7C39E22EA672E400AB4818 /* ITLinkTestTaskUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		CB7036A32EA58109007649F0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CB7C39E12EA672E400AB4818 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -217,6 +274,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CB7C39DF2EA672E400AB4818 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		CBFAB4D92EA55D5F006654AB /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -231,6 +295,11 @@
 			isa = PBXTargetDependency;
 			target = CBFAB4DC2EA55D5F006654AB /* ITLinkTestTask */;
 			targetProxy = CB7036A92EA58109007649F0 /* PBXContainerItemProxy */;
+		};
+		CB7C39EA2EA672E400AB4818 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CBFAB4DC2EA55D5F006654AB /* ITLinkTestTask */;
+			targetProxy = CB7C39E92EA672E400AB4818 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -272,6 +341,44 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ITLinkTestTask.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ITLinkTestTask";
+			};
+			name = Release;
+		};
+		CB7C39EC2EA672E400AB4818 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Prikhodko.ITLinkTestTaskUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ITLinkTestTask;
+			};
+			name = Debug;
+		};
+		CB7C39ED2EA672E400AB4818 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Prikhodko.ITLinkTestTaskUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ITLinkTestTask;
 			};
 			name = Release;
 		};
@@ -391,7 +498,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -448,7 +555,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.6;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -466,6 +573,15 @@
 			buildConfigurations = (
 				CB7036AB2EA58109007649F0 /* Debug */,
 				CB7036AC2EA58109007649F0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CB7C39EB2EA672E400AB4818 /* Build configuration list for PBXNativeTarget "ITLinkTestTaskUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CB7C39EC2EA672E400AB4818 /* Debug */,
+				CB7C39ED2EA672E400AB4818 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -42,6 +42,17 @@
                ReferencedContainer = "container:ITLinkTestTask.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "CB7C39E22EA672E400AB4818"
+               BuildableName = "ITLinkTestTaskUITests.xctest"
+               BlueprintName = "ITLinkTestTaskUITests"
+               ReferencedContainer = "container:ITLinkTestTask.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

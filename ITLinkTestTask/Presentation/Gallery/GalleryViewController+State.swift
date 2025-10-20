@@ -32,19 +32,12 @@ extension GalleryViewController {
             activityIndicator.stopAnimating()
         }
 
-        let items: [SnapshotItem]
+        let items: [GalleryItem]
         switch state.content {
         case .empty:
             items = []
         case let .snapshot(snapshot):
-            items = snapshot.items.map { item in
-                switch item {
-                case let .image(image):
-                    return .image(image)
-                case let .placeholder(placeholder):
-                    return .placeholder(placeholder)
-                }
-            }
+            items = snapshot.items
         }
         applySnapshot(with: items)
 
@@ -103,5 +96,19 @@ extension GalleryViewController {
         guard isReachabilityMonitoring else { return }
         reachability.stopMonitoring()
         isReachabilityMonitoring = false
+    }
+
+    @objc
+    func handleRefresh() {
+        startTask { [weak self] in
+            await self?.viewModel.refreshSnapshot()
+        }
+    }
+
+    @objc
+    func handleRetry() {
+        startTask { [weak self] in
+            await self?.viewModel.retry()
+        }
     }
 }

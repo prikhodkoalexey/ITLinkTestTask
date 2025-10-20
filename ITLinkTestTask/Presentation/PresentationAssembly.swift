@@ -1,7 +1,7 @@
 struct PresentationAssembly {
     let gallery: GalleryPresentationAssembly
 
-    init(domain: GalleryDomainAssembly) {
-        gallery = GalleryPresentationAssembly(domain: domain)
+    init(domain: GalleryDomainAssembly, reachability: ReachabilityService = DefaultReachabilityService()) {
+        gallery = GalleryPresentationAssembly(domain: domain, reachability: reachability)
     }
 }

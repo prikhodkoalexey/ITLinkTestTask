@@ -1,10 +1,6 @@
 import UIKit
 
 final class GalleryViewController: UIViewController {
-    enum Section {
-        case main
-    }
-
     let viewModel: GalleryViewModel
     let imageLoader: GalleryImageLoader
     let reachability: ReachabilityService
@@ -67,6 +63,7 @@ final class GalleryViewController: UIViewController {
     let refreshControl = UIRefreshControl()
     var tasks: [Task<Void, Never>] = []
     var imageTasks: [IndexPath: Task<Void, Never>] = [:]
+    var currentItems: [GalleryItem] = []
     var isReachabilityMonitoring = false
 
     init(

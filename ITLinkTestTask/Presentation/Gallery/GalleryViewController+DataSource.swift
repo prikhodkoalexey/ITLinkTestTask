@@ -1,13 +1,15 @@
 import UIKit
 
 extension GalleryViewController {
-    enum SnapshotItem: Hashable {
-        case image(GalleryImage)
-        case placeholder(GalleryPlaceholder)
-    }
-
-    func makeDataSource() -> UICollectionViewDiffableDataSource<Section, SnapshotItem> {
-        UICollectionViewDiffableDataSource(collectionView: collectionView) { collectionView, indexPath, item in
+    func makeDataSource() -> UICollectionViewDiffableDataSource<Int, Int> {
+        UICollectionViewDiffableDataSource(
+            collectionView: collectionView
+        ) { [weak self] collectionView, indexPath, identifier in
+            guard
+                let self,
+                identifier < currentItems.count
+            else { return nil }
+            let item = currentItems[identifier]
             switch item {
             case let .image(image):
                 let cell = collectionView.dequeueReusableCell(
@@ -27,10 +29,11 @@ extension GalleryViewController {
         }
     }
 
-    func applySnapshot(with items: [SnapshotItem]) {
-        var snapshot = NSDiffableDataSourceSnapshot<Section, SnapshotItem>()
-        snapshot.appendSections([.main])
-        snapshot.appendItems(items, toSection: .main)
+    func applySnapshot(with items: [GalleryItem]) {
+        currentItems = items
+        var snapshot = NSDiffableDataSourceSnapshot<Int, Int>()
+        snapshot.appendSections([0])
+        snapshot.appendItems(Array(items.indices), toSection: 0)
         dataSource.apply(snapshot, animatingDifferences: true) { [weak self] in
             guard let self else { return }
             let visible = Set(collectionView.indexPathsForVisibleItems)
@@ -56,8 +59,9 @@ extension GalleryViewController {
                 await MainActor.run {
                     guard
                         let cell,
-                        let current = dataSource.itemIdentifier(for: indexPath),
-                        case let .image(currentImage) = current,
+                        let identifier = dataSource.itemIdentifier(for: indexPath),
+                        identifier < currentItems.count,
+                        case let .image(currentImage) = currentItems[identifier],
                         currentImage == image
                     else { return }
                     cell.configure(image: uiImage, accessibilityLabel: image.originalLine)
@@ -87,8 +91,9 @@ extension GalleryViewController {
         collectionView.layoutIfNeeded()
         for indexPath in collectionView.indexPathsForVisibleItems {
             guard
-                let item = dataSource.itemIdentifier(for: indexPath),
-                case let .image(image) = item,
+                let identifier = dataSource.itemIdentifier(for: indexPath),
+                identifier < currentItems.count,
+                case let .image(image) = currentItems[identifier],
                 let cell = collectionView.cellForItem(at: indexPath) as? GalleryImageCell,
                 imageTasks[indexPath] == nil
             else { continue }
@@ -104,8 +109,9 @@ extension GalleryViewController: UICollectionViewDelegate {
         forItemAt indexPath: IndexPath
     ) {
         guard
-            let item = dataSource.itemIdentifier(for: indexPath),
-            case let .image(image) = item,
+            let identifier = dataSource.itemIdentifier(for: indexPath),
+            identifier < currentItems.count,
+            case let .image(image) = currentItems[identifier],
             let imageCell = cell as? GalleryImageCell
         else { return }
         loadImage(for: image, at: indexPath, cell: imageCell)

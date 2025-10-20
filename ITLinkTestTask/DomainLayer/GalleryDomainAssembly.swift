@@ -7,6 +7,14 @@ struct GalleryDomainAssembly {
     let fetchImageData: FetchGalleryImageDataUseCase
     let fetchMetadata: FetchGalleryMetadataUseCase
 
+    init(repository: any GalleryRepository) {
+        self.repository = repository
+        loadSnapshot = LoadGallerySnapshotUseCase(repository: repository)
+        refreshSnapshot = RefreshGallerySnapshotUseCase(repository: repository)
+        fetchImageData = FetchGalleryImageDataUseCase(repository: repository)
+        fetchMetadata = FetchGalleryMetadataUseCase(repository: repository)
+    }
+
     init(
         networking: NetworkingAssembly,
         storage: StorageAssembly
@@ -18,10 +26,6 @@ struct GalleryDomainAssembly {
             memoryCache: storage.memoryCache,
             httpClient: networking.httpClient
         )
-        self.repository = repository
-        loadSnapshot = LoadGallerySnapshotUseCase(repository: repository)
-        refreshSnapshot = RefreshGallerySnapshotUseCase(repository: repository)
-        fetchImageData = FetchGalleryImageDataUseCase(repository: repository)
-        fetchMetadata = FetchGalleryMetadataUseCase(repository: repository)
+        self.init(repository: repository)
     }
 }
