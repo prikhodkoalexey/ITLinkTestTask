@@ -62,13 +62,42 @@ actor DefaultGalleryRepository: GalleryRepository {
     }
 
     private func makeSnapshot(from snapshot: LinksFileSnapshot) -> GallerySnapshot {
-        let items = snapshot.links.compactMap { record -> GalleryImage? in
-            guard record.contentKind == .image, let url = record.url else { return nil }
-            return GalleryImage(
-                url: url,
-                originalLine: record.originalText,
-                lineNumber: record.lineNumber
-            )
+        let items = snapshot.links.map { record -> GalleryItem in
+            switch record.contentKind {
+            case .image:
+                guard let url = record.url else {
+                    return .placeholder(
+                        GalleryPlaceholder(
+                            originalLine: record.originalText,
+                            lineNumber: record.lineNumber,
+                            reason: .invalidContent
+                        )
+                    )
+                }
+                return .image(
+                    GalleryImage(
+                        url: url,
+                        originalLine: record.originalText,
+                        lineNumber: record.lineNumber
+                    )
+                )
+            case .nonImageURL:
+                return .placeholder(
+                    GalleryPlaceholder(
+                        originalLine: record.originalText,
+                        lineNumber: record.lineNumber,
+                        reason: .nonImageURL
+                    )
+                )
+            case .notURL:
+                return .placeholder(
+                    GalleryPlaceholder(
+                        originalLine: record.originalText,
+                        lineNumber: record.lineNumber,
+                        reason: .invalidContent
+                    )
+                )
+            }
         }
         return GallerySnapshot(
             sourceURL: snapshot.sourceURL,
