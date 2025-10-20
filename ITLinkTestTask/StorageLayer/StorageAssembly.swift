@@ -5,6 +5,7 @@ struct StorageAssembly {
     let fileNameHasher: FileNameHashing
     let linksCache: any LinksFileCaching
     let imageCache: any ImageDataCaching
+    let memoryCache: any MemoryImageCaching
 
     init(
         diskStore: DiskStore,
@@ -17,6 +18,7 @@ struct StorageAssembly {
             store: diskStore,
             hasher: fileNameHasher
         )
+        memoryCache = DefaultMemoryImageCache()
     }
 
     static func makeDefault() throws -> StorageAssembly {
