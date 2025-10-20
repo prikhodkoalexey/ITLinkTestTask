@@ -54,6 +54,22 @@ final class ImageViewerViewController: UIViewController {
         return button
     }()
     
+    private let shareButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        button.layer.cornerRadius = ImageViewerLayoutConstants.shareButtonSize.width / 2
+        button.contentEdgeInsets = UIEdgeInsets(
+            top: ImageViewerLayoutConstants.ButtonInsets.top,
+            left: ImageViewerLayoutConstants.ButtonInsets.left,
+            bottom: ImageViewerLayoutConstants.ButtonInsets.bottom,
+            right: ImageViewerLayoutConstants.ButtonInsets.right
+        )
+        button.setImage(UIImage(systemName: "square.and.arrow.up"), for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        return button
+    }()
+    
     private let pageControl: UIPageControl = {
         let pageControl = UIPageControl()
         pageControl.translatesAutoresizingMaskIntoConstraints = false
@@ -107,6 +123,7 @@ final class ImageViewerViewController: UIViewController {
         view.addSubview(activityIndicator)
         view.addSubview(backButton)
         view.addSubview(fullscreenButton)
+        view.addSubview(shareButton)
         view.addSubview(pageControl)
         
         tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTap))
@@ -142,6 +159,15 @@ final class ImageViewerViewController: UIViewController {
             fullscreenButton.heightAnchor
                 .constraint(equalToConstant: ImageViewerLayoutConstants.fullscreenButtonSize.height),
             
+            shareButton.topAnchor
+                .constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: ImageViewerLayoutConstants.shareButtonTopOffset),
+            shareButton.trailingAnchor
+                .constraint(equalTo: fullscreenButton.leadingAnchor, constant: -ImageViewerLayoutConstants.shareButtonSpacing),
+            shareButton.widthAnchor
+                .constraint(equalToConstant: ImageViewerLayoutConstants.shareButtonSize.width),
+            shareButton.heightAnchor
+                .constraint(equalToConstant: ImageViewerLayoutConstants.shareButtonSize.height),
+            
             pageControl.bottomAnchor
                 .constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -ImageViewerLayoutConstants.pageControlBottomOffset),
             pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor)
@@ -151,6 +177,7 @@ final class ImageViewerViewController: UIViewController {
     private func setupActions() {
         backButton.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
         fullscreenButton.addTarget(self, action: #selector(fullscreenButtonTapped), for: .touchUpInside)
+        shareButton.addTarget(self, action: #selector(shareButtonTapped), for: .touchUpInside)
         pageScrollView.delegate = self
         pageControl.addTarget(self, action: #selector(pageControlValueChanged), for: .valueChanged)
     }
@@ -348,6 +375,20 @@ final class ImageViewerViewController: UIViewController {
         )
     }
     
+    @objc private func shareButtonTapped() {
+        let currentImageURL = viewModel.getImageURL(forIndex: pageControl.currentPage)
+        guard let url = currentImageURL else { return }
+        
+        let activityViewController = UIActivityViewController(activityItems: [url.absoluteString], applicationActivities: nil)
+        
+        if let popover = activityViewController.popoverPresentationController {
+            popover.sourceView = shareButton
+            popover.sourceRect = shareButton.bounds
+        }
+        
+        present(activityViewController, animated: true)
+    }
+    
     @objc private func pageControlValueChanged() {
         scrollToPage(index: pageControl.currentPage, animated: true)
     }
@@ -401,6 +442,9 @@ private enum ImageViewerLayoutConstants {
     static let fullscreenButtonTopOffset: CGFloat = 16
     static let fullscreenButtonTrailingOffset: CGFloat = -16
     static let fullscreenButtonSize = CGSize(width: 44, height: 44)
+    static let shareButtonTopOffset: CGFloat = 16
+    static let shareButtonSpacing: CGFloat = 16
+    static let shareButtonSize = CGSize(width: 44, height: 44)
     static let pageControlBottomOffset: CGFloat = 16
     
     enum ButtonInsets {
