@@ -84,8 +84,8 @@ actor DefaultGalleryRepository: GalleryRepository {
                 throw GalleryRepositoryError.imageDataUnavailable(url)
             }
             return response.data
-        } catch is CancellationError {
-            throw error
+        } catch let cancellation as CancellationError {
+            throw cancellation
         } catch {
             throw GalleryRepositoryError.imageDataUnavailable(url)
         }
