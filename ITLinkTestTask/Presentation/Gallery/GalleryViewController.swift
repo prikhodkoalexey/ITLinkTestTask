@@ -110,3 +110,19 @@ final class GalleryViewController: UIViewController {
         stopReachabilityMonitoring()
     }
 }
+
+extension GalleryViewController: UICollectionViewDelegate {
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard indexPath.item < currentItems.count else { return }
+        
+        let item = currentItems[indexPath.item]
+        switch item {
+        case .image(let image):
+            let imageViewerAssembly = ImageViewerAssembly(galleryImageLoader: imageLoader)
+            let imageViewerViewController = imageViewerAssembly.makeImageViewerViewController(imageURL: image.url)
+            navigationController?.pushViewController(imageViewerViewController, animated: true)
+        case .placeholder:
+            break
+        }
+    }
+}
