@@ -38,13 +38,37 @@ final class ImageViewerViewController: UIViewController {
         button.setTitleColor(.white, for: .normal)
         button.layer.cornerRadius = 8
         button.contentEdgeInsets = UIEdgeInsets(
-            top: LayoutConstants.ButtonInsets.top,
-            left: LayoutConstants.ButtonInsets.left,
-            bottom: LayoutConstants.ButtonInsets.bottom,
-            right: LayoutConstants.ButtonInsets.right
+            top: ImageViewerLayoutConstants.ButtonInsets.top,
+            left: ImageViewerLayoutConstants.ButtonInsets.left,
+            bottom: ImageViewerLayoutConstants.ButtonInsets.bottom,
+            right: ImageViewerLayoutConstants.ButtonInsets.right
         )
         return button
     }()
+    
+    private let fullscreenButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.backgroundColor = UIColor.black.withAlphaComponent(0.5)
+        button.layer.cornerRadius = ImageViewerLayoutConstants.fullscreenButtonSize.width / 2
+        button.contentEdgeInsets = UIEdgeInsets(
+            top: ImageViewerLayoutConstants.ButtonInsets.top,
+            left: ImageViewerLayoutConstants.ButtonInsets.left,
+            bottom: ImageViewerLayoutConstants.ButtonInsets.bottom,
+            right: ImageViewerLayoutConstants.ButtonInsets.right
+        )
+        button.setImage(UIImage(systemName: "arrow.up.backward.and.arrow.down.forward"), for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        return button
+    }()
+    
+    private var isFullscreen = false {
+        didSet {
+            updateFullscreenState()
+        }
+    }
+    
+    private var tapGestureRecognizer: UITapGestureRecognizer!
     
     init(viewModel: ImageViewerViewModel) {
         self.viewModel = viewModel
@@ -72,6 +96,11 @@ final class ImageViewerViewController: UIViewController {
         scrollView.addSubview(imageView)
         view.addSubview(activityIndicator)
         view.addSubview(backButton)
+        view.addSubview(fullscreenButton)
+        
+        tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        tapGestureRecognizer.numberOfTapsRequired = 1
+        view.addGestureRecognizer(tapGestureRecognizer)
     }
     
     private func setupConstraints() {
@@ -89,13 +118,25 @@ final class ImageViewerViewController: UIViewController {
             activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             
-            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: LayoutConstants.backButtonTopOffset),
-            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: LayoutConstants.backButtonLeadingOffset)
+            backButton.topAnchor
+                .constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: ImageViewerLayoutConstants.backButtonTopOffset),
+            backButton.leadingAnchor
+                .constraint(equalTo: view.leadingAnchor, constant: ImageViewerLayoutConstants.backButtonLeadingOffset),
+            
+            fullscreenButton.topAnchor
+                .constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: ImageViewerLayoutConstants.fullscreenButtonTopOffset),
+            fullscreenButton.trailingAnchor
+                .constraint(equalTo: view.trailingAnchor, constant: ImageViewerLayoutConstants.fullscreenButtonTrailingOffset),
+            fullscreenButton.widthAnchor
+                .constraint(equalToConstant: ImageViewerLayoutConstants.fullscreenButtonSize.width),
+            fullscreenButton.heightAnchor
+                .constraint(equalToConstant: ImageViewerLayoutConstants.fullscreenButtonSize.height)
         ])
     }
     
     private func setupActions() {
         backButton.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
+        fullscreenButton.addTarget(self, action: #selector(fullscreenButtonTapped), for: .touchUpInside)
         scrollView.delegate = self
     }
     
@@ -146,8 +187,42 @@ final class ImageViewerViewController: UIViewController {
         scrollView.zoomScale = scrollView.minimumZoomScale
     }
     
+    private func updateFullscreenState() {
+        let systemName = isFullscreen ? "arrow.down.forward.and.arrow.up.backward" : "arrow.up.backward.and.arrow.down.forward"
+        let image = UIImage(systemName: systemName)
+        fullscreenButton.setImage(image, for: .normal)
+        
+        UIView.animate(withDuration: 0.3) {
+            self.navigationController?.setNavigationBarHidden(self.isFullscreen, animated: true)
+            self.setNeedsStatusBarAppearanceUpdate()
+            
+            self.backButton.alpha = self.isFullscreen ? 0 : 1
+            self.fullscreenButton.alpha = self.isFullscreen ? 0 : 1
+        }
+    }
+    
+    override var prefersStatusBarHidden: Bool {
+        return isFullscreen
+    }
+    
+    override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
+        return .fade
+    }
+    
     @objc private func backButtonTapped() {
         navigationController?.popViewController(animated: true)
+    }
+    
+    @objc private func fullscreenButtonTapped() {
+        isFullscreen.toggle()
+    }
+    
+    @objc private func handleTap() {
+        if isFullscreen {
+            isFullscreen = false
+        } else {
+            isFullscreen = true
+        }
     }
 }
 
@@ -172,16 +247,17 @@ extension ImageViewerViewController: UIScrollViewDelegate {
     }
 }
 
-private extension ImageViewerViewController {
-    enum LayoutConstants {
-        static let backButtonTopOffset: CGFloat = 16
-        static let backButtonLeadingOffset: CGFloat = 16
-        
-        enum ButtonInsets {
-            static let top: CGFloat = 8
-            static let left: CGFloat = 16
-            static let bottom: CGFloat = 8
-            static let right: CGFloat = 16
-        }
+private enum ImageViewerLayoutConstants {
+    static let backButtonTopOffset: CGFloat = 16
+    static let backButtonLeadingOffset: CGFloat = 16
+    static let fullscreenButtonTopOffset: CGFloat = 16
+    static let fullscreenButtonTrailingOffset: CGFloat = -16
+    static let fullscreenButtonSize = CGSize(width: 44, height: 44)
+    
+    enum ButtonInsets {
+        static let top: CGFloat = 8
+        static let left: CGFloat = 16
+        static let bottom: CGFloat = 8
+        static let right: CGFloat = 16
     }
 }
