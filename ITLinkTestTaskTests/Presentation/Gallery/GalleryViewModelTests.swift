@@ -10,7 +10,7 @@ final class GalleryViewModelTests: XCTestCase {
 
     func testObserverReceivesInitialStateImmediately() {
         let viewModel = makeViewModel()
-        var observedStates: [GalleryViewModel.State] = []
+        var observedStates: [GalleryViewState] = []
 
         viewModel.onStateChange = { [weak viewModel] state in
             _ = viewModel
@@ -23,7 +23,7 @@ final class GalleryViewModelTests: XCTestCase {
     func testLoadInitialSnapshotEmitsLoadingAndContentState() async {
         let snapshot = makeSnapshot(identifier: "initial")
         let viewModel = makeViewModel(loadResults: [.success(snapshot)])
-        var observedStates: [GalleryViewModel.State] = []
+        var observedStates: [GalleryViewState] = []
         viewModel.onStateChange = { [weak viewModel] state in
             _ = viewModel
             observedStates.append(state)
@@ -35,13 +35,13 @@ final class GalleryViewModelTests: XCTestCase {
             observedStates,
             [
                 .initial,
-                GalleryViewModel.State(
+                GalleryViewState(
                     isLoading: true,
                     isRefreshing: false,
                     content: .empty,
                     error: nil
                 ),
-                GalleryViewModel.State(
+                GalleryViewState(
                     isLoading: false,
                     isRefreshing: false,
                     content: .snapshot(snapshot),
@@ -58,11 +58,11 @@ final class GalleryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.state,
-            GalleryViewModel.State(
+            GalleryViewState(
                 isLoading: false,
                 isRefreshing: false,
                 content: .empty,
-                error: GalleryViewModel.ErrorState(
+                error: GalleryViewError(
                     message: "Не удалось загрузить галерею. Попробуйте ещё раз.",
                     isRetryAvailable: true
                 )
@@ -83,7 +83,7 @@ final class GalleryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.state,
-            GalleryViewModel.State(
+            GalleryViewState(
                 isLoading: false,
                 isRefreshing: false,
                 content: .snapshot(refreshed),
@@ -104,11 +104,11 @@ final class GalleryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.state,
-            GalleryViewModel.State(
+            GalleryViewState(
                 isLoading: false,
                 isRefreshing: false,
                 content: .snapshot(initial),
-                error: GalleryViewModel.ErrorState(
+                error: GalleryViewError(
                     message: "Не удалось обновить галерею. Попробуйте ещё раз.",
                     isRetryAvailable: true
                 )
@@ -127,7 +127,7 @@ final class GalleryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.state,
-            GalleryViewModel.State(
+            GalleryViewState(
                 isLoading: false,
                 isRefreshing: false,
                 content: .snapshot(snapshot),
@@ -150,7 +150,7 @@ final class GalleryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.state,
-            GalleryViewModel.State(
+            GalleryViewState(
                 isLoading: false,
                 isRefreshing: false,
                 content: .snapshot(refreshed),
@@ -170,7 +170,7 @@ final class GalleryViewModelTests: XCTestCase {
 
         XCTAssertEqual(
             viewModel.state,
-            GalleryViewModel.State(
+            GalleryViewState(
                 isLoading: false,
                 isRefreshing: false,
                 content: .snapshot(snapshot),

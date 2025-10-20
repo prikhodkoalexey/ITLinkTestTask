@@ -1,40 +1,16 @@
 import Foundation
 
 final class GalleryViewModel {
-    struct State: Equatable {
-        var isLoading: Bool
-        var isRefreshing: Bool
-        var content: Content
-        var error: ErrorState?
-
-        static let initial = State(
-            isLoading: false,
-            isRefreshing: false,
-            content: Content.empty,
-            error: nil
-        )
-    }
-
-    struct ErrorState: Equatable {
-        let message: String
-        let isRetryAvailable: Bool
-    }
-
-    enum Content: Equatable {
-        case empty
-        case snapshot(GallerySnapshot)
-    }
-
     typealias SnapshotLoader = () async throws -> GallerySnapshot
 
     private let loadSnapshotHandler: SnapshotLoader
     private let refreshSnapshotHandler: SnapshotLoader
 
-    private var stateStorage: State = .initial
+    private var stateStorage: GalleryViewState = .initial
 
-    var state: State { stateStorage }
+    var state: GalleryViewState { stateStorage }
 
-    var onStateChange: ((State) -> Void)? {
+    var onStateChange: ((GalleryViewState) -> Void)? {
         didSet {
             guard let observer = onStateChange else { return }
             observer(stateStorage)
@@ -50,21 +26,11 @@ final class GalleryViewModel {
     }
 
     func loadInitialSnapshot() async {
-        let shouldStart = await MainActor.run { () -> Bool in
-            guard !stateStorage.isLoading else { return false }
-            stateStorage = State(
-                isLoading: true,
-                isRefreshing: false,
-                content: Content.empty,
-                error: nil
-            )
-            onStateChange?(stateStorage)
-            return true
-        }
+        let shouldStart = await MainActor.run { startInitialLoad() }
         guard shouldStart else { return }
         await performLoad(
             using: loadSnapshotHandler,
-            fallbackContent: Content.empty,
+            fallbackContent: .empty,
             failureMessage: "Не удалось загрузить галерею. Попробуйте ещё раз."
         )
     }
@@ -76,13 +42,7 @@ final class GalleryViewModel {
         case .empty:
             await loadInitialSnapshot()
         case .snapshot:
-            await MainActor.run {
-                var nextState = currentState
-                nextState.isRefreshing = true
-                nextState.error = nil
-                stateStorage = nextState
-                onStateChange?(nextState)
-            }
+            await MainActor.run { beginRefresh(from: currentState) }
             await performLoad(
                 using: refreshSnapshotHandler,
                 fallbackContent: currentState.content,
@@ -103,47 +63,75 @@ final class GalleryViewModel {
 
     private func performLoad(
         using loader: @escaping SnapshotLoader,
-        fallbackContent: Content,
+        fallbackContent: GalleryViewContent,
         failureMessage: String
     ) async {
         do {
             let snapshot = try await loader()
             await MainActor.run {
-                stateStorage = State(
-                    isLoading: false,
-                    isRefreshing: false,
-                    content: .snapshot(snapshot),
-                    error: nil
-                )
-                onStateChange?(stateStorage)
+                concludeLoad(content: .snapshot(snapshot))
             }
         } catch is CancellationError {
             await MainActor.run {
-                stateStorage = State(
-                    isLoading: false,
-                    isRefreshing: false,
-                    content: fallbackContent,
-                    error: nil
-                )
-                onStateChange?(stateStorage)
+                concludeLoad(content: fallbackContent)
             }
         } catch {
             await MainActor.run {
-                stateStorage = State(
-                    isLoading: false,
-                    isRefreshing: false,
+                concludeLoad(
                     content: fallbackContent,
-                    error: ErrorState(
-                        message: failureMessage,
-                        isRetryAvailable: true
-                    )
+                    errorMessage: failureMessage
                 )
-                onStateChange?(stateStorage)
             }
         }
     }
 
     deinit {
         onStateChange = nil
+    }
+
+    @MainActor
+    private func startInitialLoad() -> Bool {
+        guard !stateStorage.isLoading else { return false }
+        emit(
+            GalleryViewState(
+                isLoading: true,
+                isRefreshing: false,
+                content: .empty,
+                error: nil
+            )
+        )
+        return true
+    }
+
+    @MainActor
+    private func beginRefresh(from state: GalleryViewState) {
+        var next = state
+        next.isRefreshing = true
+        next.error = nil
+        emit(next)
+    }
+
+    @MainActor
+    private func concludeLoad(
+        content: GalleryViewContent,
+        errorMessage: String? = nil
+    ) {
+        let errorState = errorMessage.map {
+            GalleryViewError(message: $0, isRetryAvailable: true)
+        }
+        emit(
+            GalleryViewState(
+                isLoading: false,
+                isRefreshing: false,
+                content: content,
+                error: errorState
+            )
+        )
+    }
+
+    @MainActor
+    private func emit(_ state: GalleryViewState) {
+        stateStorage = state
+        onStateChange?(state)
     }
 }
