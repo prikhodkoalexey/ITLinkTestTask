@@ -1,6 +1,6 @@
 import Foundation
 
-protocol LinksFileCaching {
+protocol LinksFileCaching: Sendable {
     func loadSnapshot() async throws -> LinksFileSnapshot?
     func saveSnapshot(_ snapshot: LinksFileSnapshot) async throws
     func clear() async throws

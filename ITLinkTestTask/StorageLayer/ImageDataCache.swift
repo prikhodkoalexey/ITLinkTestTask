@@ -24,7 +24,7 @@ struct ImageDataCacheConfiguration {
     )
 }
 
-protocol ImageDataCaching {
+protocol ImageDataCaching: Sendable {
     func data(for url: URL, variant: ImageDataVariant) async throws -> Data?
     func store(_ data: Data, for url: URL, variant: ImageDataVariant) async throws
     func remove(for url: URL, variant: ImageDataVariant) async throws
