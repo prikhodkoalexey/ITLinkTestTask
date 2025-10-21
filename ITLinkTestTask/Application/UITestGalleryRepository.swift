@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 struct UITestGalleryConfiguration {
     let failureMode: LaunchArguments.FailureMode
@@ -8,13 +9,12 @@ struct UITestGalleryConfiguration {
 actor UITestGalleryRepository: GalleryRepository {
     private let configuration: UITestGalleryConfiguration
     private let snapshot: GallerySnapshot
-    private let imageData: Data
     private var didFailOnce = false
     private var remainingSequence: [LaunchArguments.FailureStep]
+    private var cachedImageData: [URL: Data] = [:]
 
     init(configuration: UITestGalleryConfiguration) {
         self.configuration = configuration
-        self.imageData = Self.makeImageData()
         self.snapshot = Self.makeSnapshot()
         self.remainingSequence = configuration.failureSequence
     }
@@ -32,7 +32,12 @@ actor UITestGalleryRepository: GalleryRepository {
     }
 
     func imageData(for url: URL, variant: ImageDataVariant) async throws -> Data {
-        imageData
+        if let cached = cachedImageData[url] {
+            return cached
+        }
+        let data = await Self.renderImageData(for: url)
+        cachedImageData[url] = data
+        return data
     }
 
     func metadata(for url: URL) async throws -> ImageMetadata {
@@ -114,11 +119,69 @@ actor UITestGalleryRepository: GalleryRepository {
         ]
     }
 
-    private static func makeImageData() -> Data {
-        let base64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAocB9pG5BxwAAAAASUVORK5CYII="
-        guard let data = Data(base64Encoded: base64) else {
-            fatalError("Failed to decode sample image data")
+    private nonisolated static func renderImageData(for url: URL) async -> Data {
+        await MainActor.run {
+            let size = CGSize(width: 360, height: 360)
+            let renderer = UIGraphicsImageRenderer(size: size)
+            let image = renderer.image { context in
+                let bounds = CGRect(origin: .zero, size: size)
+                let backgroundColor = Self.color(for: url)
+                backgroundColor.setFill()
+                context.fill(bounds)
+
+                let stripeColor = backgroundColor.withAlphaComponent(0.4)
+                stripeColor.setFill()
+                let stripePath = UIBezierPath()
+                stripePath.move(to: CGPoint(x: 0, y: size.height * 0.65))
+                stripePath.addLine(to: CGPoint(x: size.width, y: size.height * 0.45))
+                stripePath.addLine(to: CGPoint(x: size.width, y: size.height))
+                stripePath.addLine(to: CGPoint(x: 0, y: size.height))
+                stripePath.close()
+                stripePath.fill()
+
+                let indexString = Self.indexLabel(for: url)
+                let attributes: [NSAttributedString.Key: Any] = [
+                    .font: UIFont.systemFont(ofSize: size.width / 3.2, weight: .bold),
+                    .foregroundColor: UIColor.white
+                ]
+                let textSize = indexString.size(withAttributes: attributes)
+                let textOrigin = CGPoint(
+                    x: (size.width - textSize.width) / 2,
+                    y: (size.height - textSize.height) / 2
+                )
+                indexString.draw(at: textOrigin, withAttributes: attributes)
+            }
+            return image.pngData() ?? Data()
         }
-        return data
+    }
+
+    private nonisolated static func indexLabel(for url: URL) -> NSString {
+        let number = (sampleIndex(for: url) % 99) + 1
+        return NSString(string: "\(number)")
+    }
+
+    private nonisolated static func color(for url: URL) -> UIColor {
+        let palette: [UIColor] = [
+            UIColor(red: 0.23, green: 0.52, blue: 0.96, alpha: 1),
+            UIColor(red: 0.18, green: 0.78, blue: 0.45, alpha: 1),
+            UIColor(red: 0.88, green: 0.32, blue: 0.39, alpha: 1),
+            UIColor(red: 0.93, green: 0.66, blue: 0.26, alpha: 1),
+            UIColor(red: 0.55, green: 0.39, blue: 0.95, alpha: 1)
+        ]
+        let index = sampleIndex(for: url) % palette.count
+        return palette[index]
+    }
+
+    private nonisolated static func sampleIndex(for url: URL) -> Int {
+        let name = url.deletingPathExtension().lastPathComponent
+        let tokens = name.split(separator: "-")
+        if let last = tokens.last, let number = Int(last) {
+            return max(0, number - 1)
+        }
+        var hash = 0
+        for scalar in url.absoluteString.unicodeScalars {
+            hash = (hash &* 31 &+ Int(scalar.value)) & 0x7FFFFFFF
+        }
+        return hash
     }
 }

@@ -24,56 +24,73 @@ final class ImageViewerViewControllerUITests: XCTestCase {
         baseArguments = []
         baseEnvironment = [:]
     }
-    
-    func testImageViewerDisplaysImage() {
+
+    func testInitialPageShowsChromeAndProgress() throws {
         launch()
-        robot.waitForImageView()
-        XCTAssertTrue(robot.isImageViewVisible())
+        robot.waitForChromeVisible()
+        let progress = try XCTUnwrap(robot.pageProgress())
+        XCTAssertEqual(progress.current, 1)
+        XCTAssertEqual(progress.total, 3)
     }
-    
-    func testImageViewerShowsLoadingIndicatorWhileLoading() {
+
+    func testSwipingChangesPages() {
         launch()
-        robot.waitForActivityIndicator()
-        XCTAssertTrue(robot.isActivityIndicatorExists())
+        robot.waitForPage(index: 1)
+        robot.swipeLeft().waitForPage(index: 2)
+        robot.swipeLeft().waitForPage(index: 3)
+        robot.swipeRight().waitForPage(index: 2)
     }
-    
-    func testImageViewerHasBackButton() {
+
+    func testSingleTapTogglesChrome() {
         launch()
-        robot.waitForBackButton()
-        XCTAssertTrue(robot.isBackButtonExists())
+        robot.waitForChromeVisible()
+        robot.tapImageView().waitForChromeHidden()
+        robot.tapImageView().waitForChromeVisible()
     }
-    
-    func testImageViewerBackButtonReturnsToGallery() {
+
+    func testFullscreenButtonTogglesChrome() {
+        launch()
+        robot.waitForChromeVisible()
+        robot.tapFullscreenButton().waitForChromeHidden()
+        robot.tapFullscreenButton().waitForChromeVisible()
+    }
+
+    func testShareButtonPresentsShareSheet() {
+        launch()
+        robot.tapShareButton().waitForShareSheet()
+        XCTAssertTrue(robot.isShareSheetPresented())
+    }
+
+    func testBackButtonReturnsToGallery() {
         launch()
         robot.waitForBackButton()
         robot.tapBackButton()
-        XCTAssertTrue(app.collectionViews.element.exists)
+        XCTAssertTrue(app.collectionViews.element.waitForExistence(timeout: 5))
     }
-    
-    func testImageViewerSupportsZoom() {
+
+    func testZoomGesturesKeepImageVisible() {
         launch()
-        robot.waitForImageView()
+        robot.waitForViewer()
         robot.pinchImageView(scale: 2.0)
         XCTAssertTrue(robot.isImageViewVisible())
-    }
-    
-    func testImageViewerSupportsSwiping() {
-        launch()
-        robot.waitForImageView()
-        robot.swipeLeft()
+        robot.doubleTapImageView()
         XCTAssertTrue(robot.isImageViewVisible())
-        robot.swipeRight()
+        robot.doubleTapImageView()
         XCTAssertTrue(robot.isImageViewVisible())
     }
-    
-    private func launch() {
+
+    private func launch(additionalEnvironment: [String: String] = [:]) {
+        var environment = baseEnvironment
+        additionalEnvironment.forEach { key, value in
+            environment[key] = value
+        }
         app.launchArguments = baseArguments
-        app.launchEnvironment = baseEnvironment
+        app.launchEnvironment = environment
         app.launch()
         GalleryViewRobot(app: app)
             .waitForGrid()
             .tapFirstImage()
         robot = ImageViewerViewRobot(app: app)
-            .waitForImageView()
+            .waitForViewer()
     }
 }

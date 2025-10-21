@@ -7,6 +7,13 @@ final class ImageViewerPageCell: UICollectionViewCell, UIScrollViewDelegate {
     var onSingleTap: (() -> Void)?
     var onDoubleTap: ((CGPoint) -> Void)?
 
+    private enum Accessibility {
+        static let scrollView = "image-viewer-scroll"
+        static let imageView = "image-viewer-image"
+        static let activityIndicator = "image-viewer-activity"
+        static let retryButton = "image-viewer-retry"
+    }
+
     private let scrollView: UIScrollView = {
         let scrollView = UIScrollView()
         scrollView.maximumZoomScale = 3
@@ -16,6 +23,7 @@ final class ImageViewerPageCell: UICollectionViewCell, UIScrollViewDelegate {
         scrollView.bouncesZoom = true
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         scrollView.backgroundColor = .clear
+        scrollView.accessibilityIdentifier = Accessibility.scrollView
         return scrollView
     }()
 
@@ -24,6 +32,8 @@ final class ImageViewerPageCell: UICollectionViewCell, UIScrollViewDelegate {
         imageView.translatesAutoresizingMaskIntoConstraints = true
         imageView.contentMode = .scaleAspectFit
         imageView.backgroundColor = .clear
+        imageView.isAccessibilityElement = true
+        imageView.accessibilityIdentifier = Accessibility.imageView
         return imageView
     }()
 
@@ -31,6 +41,7 @@ final class ImageViewerPageCell: UICollectionViewCell, UIScrollViewDelegate {
         let indicator = UIActivityIndicatorView(style: .large)
         indicator.translatesAutoresizingMaskIntoConstraints = false
         indicator.hidesWhenStopped = true
+        indicator.accessibilityIdentifier = Accessibility.activityIndicator
         return indicator
     }()
 
@@ -44,6 +55,7 @@ final class ImageViewerPageCell: UICollectionViewCell, UIScrollViewDelegate {
         button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 24, bottom: 12, right: 24)
         button.layer.cornerRadius = 16
         button.isHidden = true
+        button.accessibilityIdentifier = Accessibility.retryButton
         return button
     }()
 

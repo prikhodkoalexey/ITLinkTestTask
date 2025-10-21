@@ -16,6 +16,7 @@ final class ImageViewerViewController: UIViewController {
         collectionView.showsVerticalScrollIndicator = false
         collectionView.backgroundColor = .black
         collectionView.contentInsetAdjustmentBehavior = .never
+        collectionView.accessibilityIdentifier = Accessibility.collectionView
         return collectionView
     }()
 
@@ -40,6 +41,8 @@ final class ImageViewerViewController: UIViewController {
         button.tintColor = .white
         button.setImage(UIImage(systemName: "square.and.arrow.up"), for: .normal)
         button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        button.accessibilityIdentifier = Accessibility.shareButton
+        button.accessibilityLabel = "Поделиться"
         return button
     }()
 
@@ -51,6 +54,8 @@ final class ImageViewerViewController: UIViewController {
         button.tintColor = .white
         button.setImage(UIImage(systemName: "arrow.up.backward.and.arrow.down.forward"), for: .normal)
         button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        button.accessibilityIdentifier = Accessibility.fullscreenButton
+        button.accessibilityLabel = "Полноэкранный режим"
         return button
     }()
 
@@ -68,6 +73,7 @@ final class ImageViewerViewController: UIViewController {
         control.hidesForSinglePage = true
         control.pageIndicatorTintColor = UIColor.white.withAlphaComponent(0.4)
         control.currentPageIndicatorTintColor = .white
+        control.accessibilityIdentifier = Accessibility.pageControl
         return control
     }()
 
