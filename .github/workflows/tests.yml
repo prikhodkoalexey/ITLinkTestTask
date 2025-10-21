@@ -1,0 +1,161 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: SwiftLint
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache SwiftLint build
+        uses: actions/cache@v4
+        with:
+          path: Tools/SwiftLint
+          key: swiftlint-${{ runner.os }}-${{ hashFiles('swiftlint.yml', 'Scripts/run-swiftlint.sh') }}
+          restore-keys: |
+            swiftlint-${{ runner.os }}-
+
+      - name: Run SwiftLint
+        run: Scripts/run-swiftlint.sh
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: macos-14
+    needs: lint
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "iPhone 15 iOS 17.5"
+            destination: "platform=iOS Simulator,name=iPhone 15,OS=17.5"
+            cache-key: iph15-os175
+          - name: "iPhone 14 iOS 16.4"
+            destination: "platform=iOS Simulator,name=iPhone 14,OS=16.4"
+            cache-key: iph14-os164
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: DerivedData/${{ matrix.cache-key }}
+          key: derived-${{ runner.os }}-${{ matrix.cache-key }}-${{ hashFiles('ITLinkTestTask.xcodeproj/project.pbxproj') }}
+          restore-keys: |
+            derived-${{ runner.os }}-
+            derived-
+
+      - name: Cache SwiftPM artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved', '**/*.xcodeproj/project.pbxproj') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Run unit tests
+        id: run-unit-tests
+        env:
+          DESTINATION: ${{ matrix.destination }}
+          DERIVED_PATH: DerivedData/${{ matrix.cache-key }}
+          XCRESULT_PATH: TestResults/${{ matrix.cache-key }}.xcresult
+        run: |
+          set -eo pipefail
+          mkdir -p "$(dirname "$XCRESULT_PATH")"
+          xcodebuild test \
+            -project ITLinkTestTask.xcodeproj \
+            -scheme ITLinkTestTask \
+            -destination "$DESTINATION" \
+            -derivedDataPath "$DERIVED_PATH" \
+            -resultBundlePath "$XCRESULT_PATH" \
+            -only-testing:ITLinkTestTaskTests \
+            -allowProvisioningUpdates NO \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO
+          echo "xcresult_path=$XCRESULT_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Publish results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnitTests-${{ matrix.cache-key }}
+          path: ${{ steps.run-unit-tests.outputs.xcresult_path }}
+
+  ui-tests:
+    name: UI Tests
+    runs-on: macos-14
+    needs: unit-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "iPhone 15 iOS 17.5"
+            destination: "platform=iOS Simulator,name=iPhone 15,OS=17.5"
+            cache-key: ui-iph15-os175
+    timeout-minutes: 40
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: DerivedData/${{ matrix.cache-key }}
+          key: derived-ui-${{ runner.os }}-${{ matrix.cache-key }}-${{ hashFiles('ITLinkTestTask.xcodeproj/project.pbxproj') }}
+          restore-keys: |
+            derived-ui-${{ runner.os }}-
+            derived-ui-
+
+      - name: Cache SwiftPM artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('Package.resolved', '**/*.xcodeproj/project.pbxproj') }}
+          restore-keys: |
+            spm-${{ runner.os }}-
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Run UI tests
+        id: run-ui-tests
+        env:
+          DESTINATION: ${{ matrix.destination }}
+          DERIVED_PATH: DerivedData/${{ matrix.cache-key }}
+          XCRESULT_PATH: TestResults/${{ matrix.cache-key }}.xcresult
+        run: |
+          set -eo pipefail
+          mkdir -p "$(dirname "$XCRESULT_PATH")"
+          xcodebuild test \
+            -project ITLinkTestTask.xcodeproj \
+            -scheme ITLinkTestTask \
+            -destination "$DESTINATION" \
+            -derivedDataPath "$DERIVED_PATH" \
+            -resultBundlePath "$XCRESULT_PATH" \
+            -only-testing:ITLinkTestTaskUITests \
+            -allowProvisioningUpdates NO \
+            -quiet \
+            CODE_SIGNING_ALLOWED=NO
+          echo "xcresult_path=$XCRESULT_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: Publish UI test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: UITests-${{ matrix.cache-key }}
+          path: ${{ steps.run-ui-tests.outputs.xcresult_path }}
