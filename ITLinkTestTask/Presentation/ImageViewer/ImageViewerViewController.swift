@@ -1,476 +1,329 @@
 import UIKit
 
 final class ImageViewerViewController: UIViewController {
-    private var viewModel: ImageViewerViewModel
-    
-    private let pageScrollView: UIScrollView = {
-        let scrollView = UIScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.isPagingEnabled = true
-        scrollView.showsHorizontalScrollIndicator = false
-        scrollView.showsVerticalScrollIndicator = false
-        scrollView.bounces = false
-        scrollView.backgroundColor = .black
-        return scrollView
+    private let viewModel: ImageViewerViewModel
+    private var previousNavigationBarHidden = false
+
+    private lazy var collectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = .horizontal
+        layout.minimumLineSpacing = 0
+        layout.minimumInteritemSpacing = 0
+        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        collectionView.isPagingEnabled = true
+        collectionView.showsHorizontalScrollIndicator = false
+        collectionView.showsVerticalScrollIndicator = false
+        collectionView.backgroundColor = .black
+        collectionView.contentInsetAdjustmentBehavior = .never
+        return collectionView
     }()
-    
-    private let activityIndicator: UIActivityIndicatorView = {
-        let indicator = UIActivityIndicatorView(style: .large)
-        indicator.translatesAutoresizingMaskIntoConstraints = false
-        indicator.hidesWhenStopped = true
-        return indicator
-    }()
-    
+
     private let backButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.setTitle("Назад", for: .normal)
-        button.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .medium)
-        button.backgroundColor = UIColor.black.withAlphaComponent(0.5)
-        button.setTitleColor(.white, for: .normal)
-        button.layer.cornerRadius = 8
-        button.contentEdgeInsets = UIEdgeInsets(
-            top: ImageViewerLayoutConstants.ButtonInsets.top,
-            left: ImageViewerLayoutConstants.ButtonInsets.left,
-            bottom: ImageViewerLayoutConstants.ButtonInsets.bottom,
-            right: ImageViewerLayoutConstants.ButtonInsets.right
-        )
+        button.setImage(UIImage(systemName: "chevron.backward"), for: .normal)
+        button.tintColor = .white
+        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        button.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        button.layer.cornerRadius = 22
         button.accessibilityIdentifier = Accessibility.backButton
+        button.accessibilityLabel = "Назад"
         return button
     }()
-    
-    private let fullscreenButton: UIButton = {
-        let button = UIButton(type: .system)
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.backgroundColor = UIColor.black.withAlphaComponent(0.5)
-        button.layer.cornerRadius = ImageViewerLayoutConstants.fullscreenButtonSize.width / 2
-        button.contentEdgeInsets = UIEdgeInsets(
-            top: ImageViewerLayoutConstants.ButtonInsets.top,
-            left: ImageViewerLayoutConstants.ButtonInsets.left,
-            bottom: ImageViewerLayoutConstants.ButtonInsets.bottom,
-            right: ImageViewerLayoutConstants.ButtonInsets.right
-        )
-        button.setImage(UIImage(systemName: "arrow.up.backward.and.arrow.down.forward"), for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        return button
-    }()
-    
+
     private let shareButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.backgroundColor = UIColor.black.withAlphaComponent(0.5)
-        button.layer.cornerRadius = ImageViewerLayoutConstants.shareButtonSize.width / 2
-        button.contentEdgeInsets = UIEdgeInsets(
-            top: ImageViewerLayoutConstants.ButtonInsets.top,
-            left: ImageViewerLayoutConstants.ButtonInsets.left,
-            bottom: ImageViewerLayoutConstants.ButtonInsets.bottom,
-            right: ImageViewerLayoutConstants.ButtonInsets.right
-        )
+        button.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        button.layer.cornerRadius = 22
+        button.tintColor = .white
         button.setImage(UIImage(systemName: "square.and.arrow.up"), for: .normal)
-        button.setTitleColor(.white, for: .normal)
+        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         return button
     }()
-    
-    private let pageControl: UIPageControl = {
-        let pageControl = UIPageControl()
-        pageControl.translatesAutoresizingMaskIntoConstraints = false
-        pageControl.pageIndicatorTintColor = UIColor.white.withAlphaComponent(0.4)
-        pageControl.currentPageIndicatorTintColor = .white
-        return pageControl
+
+    private let fullscreenButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        button.layer.cornerRadius = 22
+        button.tintColor = .white
+        button.setImage(UIImage(systemName: "arrow.up.backward.and.arrow.down.forward"), for: .normal)
+        button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
+        return button
     }()
-    
-    private var imageScrollViews: [UIScrollView] = []
-    private var imageViews: [UIImageView] = []
-    private var tapGestureRecognizer: UITapGestureRecognizer!
-    private var doubleTapGestureRecognizer: UITapGestureRecognizer!
-    
-    private var isFullscreen = false {
+
+    private let rightStack: UIStackView = {
+        let stack = UIStackView()
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.axis = .horizontal
+        stack.spacing = 12
+        return stack
+    }()
+
+    private let pageControl: UIPageControl = {
+        let control = UIPageControl()
+        control.translatesAutoresizingMaskIntoConstraints = false
+        control.hidesForSinglePage = true
+        control.pageIndicatorTintColor = UIColor.white.withAlphaComponent(0.4)
+        control.currentPageIndicatorTintColor = .white
+        return control
+    }()
+
+    private var isChromeHidden = false {
         didSet {
-            updateFullscreenState()
+            guard oldValue != isChromeHidden else { return }
+            updateChrome(animated: true)
         }
     }
-    
+
     init(viewModel: ImageViewerViewModel) {
         self.viewModel = viewModel
         super.init(nibName: nil, bundle: nil)
     }
-    
-    @available(*, unavailable)
+
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
-        setupConstraints()
-        setupActions()
-        bind(to: viewModel)
-        
-        setupPages()
+        setupBindings()
+        collectionView.reloadData()
+        collectionView.layoutIfNeeded()
+        moveToInitialPage()
         updatePageControl()
-        viewModel.loadImage()
+        viewModel.start()
     }
-    
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        previousNavigationBarHidden = navigationController?.isNavigationBarHidden ?? false
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        navigationController?.setNavigationBarHidden(previousNavigationBarHidden, animated: animated)
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        UIView.performWithoutAnimation {
-            updatePageContentSize()
-            scrollToPage(index: viewModel.currentIndexInGallery, animated: false)
-            updateZoomScalesForImages()
+        guard let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout else { return }
+        let size = collectionView.bounds.size
+        if layout.itemSize != size {
+            layout.itemSize = size
+            layout.invalidateLayout()
+            scrollToCurrentPage(animated: false)
         }
     }
-    
+
+    override var prefersStatusBarHidden: Bool {
+        isChromeHidden
+    }
+
+    override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
+        .fade
+    }
+
+    override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: { [weak self] _ in
+            self?.collectionView.collectionViewLayout.invalidateLayout()
+        }, completion: { [weak self] _ in
+            self?.scrollToCurrentPage(animated: false)
+        })
+    }
+
     private func setupView() {
         view.backgroundColor = .black
-        view.addSubview(pageScrollView)
-        view.addSubview(activityIndicator)
+        collectionView.delegate = self
+        collectionView.dataSource = self
+        collectionView.register(ImageViewerPageCell.self, forCellWithReuseIdentifier: ImageViewerPageCell.reuseIdentifier)
+        view.addSubview(collectionView)
         view.addSubview(backButton)
-        view.addSubview(fullscreenButton)
-        view.addSubview(shareButton)
+        view.addSubview(rightStack)
+        rightStack.addArrangedSubview(shareButton)
+        rightStack.addArrangedSubview(fullscreenButton)
         view.addSubview(pageControl)
-        
-        tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleTap))
-        tapGestureRecognizer.numberOfTapsRequired = 1
-        view.addGestureRecognizer(tapGestureRecognizer)
-        
-        doubleTapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleDoubleTap))
-        doubleTapGestureRecognizer.numberOfTapsRequired = 2
-        tapGestureRecognizer.require(toFail: doubleTapGestureRecognizer)
-        view.addGestureRecognizer(doubleTapGestureRecognizer)
-    }
-    
-    private func setupConstraints() {
+
         NSLayoutConstraint.activate([
-            pageScrollView.topAnchor.constraint(equalTo: view.topAnchor),
-            pageScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            pageScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            pageScrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            
-            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            
-            backButton.topAnchor
-                .constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: ImageViewerLayoutConstants.backButtonTopOffset),
-            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: ImageViewerLayoutConstants.backButtonLeadingOffset),
-            
-            fullscreenButton.topAnchor
-                .constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: ImageViewerLayoutConstants.fullscreenButtonTopOffset),
-            fullscreenButton.trailingAnchor
-                .constraint(equalTo: view.trailingAnchor, constant: ImageViewerLayoutConstants.fullscreenButtonTrailingOffset),
-            fullscreenButton.widthAnchor
-                .constraint(equalToConstant: ImageViewerLayoutConstants.fullscreenButtonSize.width),
-            fullscreenButton.heightAnchor
-                .constraint(equalToConstant: ImageViewerLayoutConstants.fullscreenButtonSize.height),
-            
-            shareButton.topAnchor
-                .constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: ImageViewerLayoutConstants.shareButtonTopOffset),
-            shareButton.trailingAnchor
-                .constraint(equalTo: fullscreenButton.leadingAnchor, constant: -ImageViewerLayoutConstants.shareButtonSpacing),
-            shareButton.widthAnchor
-                .constraint(equalToConstant: ImageViewerLayoutConstants.shareButtonSize.width),
-            shareButton.heightAnchor
-                .constraint(equalToConstant: ImageViewerLayoutConstants.shareButtonSize.height),
-            
-            pageControl.bottomAnchor
-                .constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -ImageViewerLayoutConstants.pageControlBottomOffset),
-            pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor)
+            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+            backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            backButton.widthAnchor.constraint(equalToConstant: 44),
+            backButton.heightAnchor.constraint(equalToConstant: 44),
+
+            rightStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            rightStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+
+            shareButton.widthAnchor.constraint(equalToConstant: 44),
+            shareButton.heightAnchor.constraint(equalToConstant: 44),
+            fullscreenButton.widthAnchor.constraint(equalToConstant: 44),
+            fullscreenButton.heightAnchor.constraint(equalToConstant: 44),
+
+            pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            pageControl.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16)
         ])
+
+        backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
+        shareButton.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
+        fullscreenButton.addTarget(self, action: #selector(handleFullscreen), for: .touchUpInside)
+        pageControl.addTarget(self, action: #selector(handlePageControl), for: .valueChanged)
     }
-    
-    private func setupActions() {
-        backButton.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
-        fullscreenButton.addTarget(self, action: #selector(fullscreenButtonTapped), for: .touchUpInside)
-        shareButton.addTarget(self, action: #selector(shareButtonTapped), for: .touchUpInside)
-        pageScrollView.delegate = self
-        pageControl.addTarget(self, action: #selector(pageControlValueChanged), for: .valueChanged)
-    }
-    
-    private func bind(to viewModel: ImageViewerViewModel) {
-        viewModel.onStateChange = { [weak self] state in
-            DispatchQueue.main.async {
-                self?.handleViewModelState(state)
+
+    private func setupBindings() {
+        viewModel.onPageStateChange = { [weak self] index, state in
+            guard let self else { return }
+            guard let cell = self.collectionView.cellForItem(at: IndexPath(item: index, section: 0)) as? ImageViewerPageCell else {
+                return
+            }
+            cell.configure(with: state)
+            if case .loaded = state {
+                cell.resetZoom()
             }
         }
-        
-        viewModel.onImageLoaded = { [weak self] in
-            DispatchQueue.main.async {
-                self?.updatePageControl()
-            }
-        }
-    }
-    
-    private func setupPages() {
-        let totalImages = viewModel.totalImagesCount
-        imageScrollViews.removeAll()
-        imageViews.removeAll()
-        
-        pageScrollView.subviews.forEach { $0.removeFromSuperview() }
-        
-        for _ in 0..<totalImages {
-            let scrollContainer = createScrollView()
-            let imageView = createImageView()
 
-            scrollContainer.addSubview(imageView)
-            pageScrollView.addSubview(scrollContainer)
+        viewModel.onCurrentIndexChange = { [weak self] index in
+            guard let self else { return }
+            self.pageControl.currentPage = index
+        }
+    }
 
-            imageScrollViews.append(scrollContainer)
-            imageViews.append(imageView)
-        }
+    private func moveToInitialPage() {
+        guard viewModel.totalImagesCount > 0 else { return }
+        let index = min(max(0, viewModel.currentIndex), viewModel.totalImagesCount - 1)
+        let indexPath = IndexPath(item: index, section: 0)
+        collectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: false)
     }
-    
-    private func createScrollView() -> UIScrollView {
-        let scrollView = UIScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.delegate = self
-        scrollView.minimumZoomScale = 1.0
-        scrollView.maximumZoomScale = 3.0
-        scrollView.showsHorizontalScrollIndicator = false
-        scrollView.showsVerticalScrollIndicator = false
-        scrollView.backgroundColor = .black
-        return scrollView
+
+    private func scrollToCurrentPage(animated: Bool) {
+        guard viewModel.totalImagesCount > 0 else { return }
+        let indexPath = IndexPath(item: viewModel.currentIndex, section: 0)
+        collectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: animated)
     }
-    
-    private func createImageView() -> UIImageView {
-        let imageView = UIImageView()
-        imageView.translatesAutoresizingMaskIntoConstraints = true
-        imageView.contentMode = .scaleAspectFit
-        imageView.backgroundColor = .systemBackground
-        return imageView
-    }
-    
-    private func updatePageContentSize() {
-        pageScrollView.contentSize = CGSize(
-            width: pageScrollView.bounds.width * CGFloat(imageViews.count),
-            height: pageScrollView.bounds.height
-        )
-        
-        for (index, scrollView) in imageScrollViews.enumerated() {
-            scrollView.frame = CGRect(
-                x: CGFloat(index) * pageScrollView.bounds.width,
-                y: 0,
-                width: pageScrollView.bounds.width,
-                height: pageScrollView.bounds.height
-            )
-        }
-    }
-    
-    private func scrollToPage(index: Int, animated: Bool) {
-        let pageOffset = CGFloat(index) * pageScrollView.bounds.width
-        pageScrollView.setContentOffset(CGPoint(x: pageOffset, y: 0), animated: animated)
-    }
-    
+
     private func updatePageControl() {
         pageControl.numberOfPages = viewModel.totalImagesCount
-        pageControl.currentPage = viewModel.currentIndexInGallery
-        pageControl.isHidden = viewModel.totalImagesCount <= 1
-    }
-    
-    private func handleViewModelState(_ state: ImageViewerViewState) {
-        let currentScrollView = imageScrollViews[viewModel.currentIndexInGallery]
-        let currentImageView = imageViews[viewModel.currentIndexInGallery]
-        
-        switch state {
-        case .loading:
-            activityIndicator.startAnimating()
-            currentImageView.image = nil
-        case .loaded(let image):
-            activityIndicator.stopAnimating()
-            currentImageView.image = image
-            setupZoomForImage(scrollView: currentScrollView, imageView: currentImageView, image: image)
-        case .error:
-            activityIndicator.stopAnimating()
-        }
-    }
-    
-    private func updateZoomScalesForImages() {
-        guard imageScrollViews.count == imageViews.count else { return }
-        for index in 0..<imageScrollViews.count {
-            let scrollView = imageScrollViews[index]
-            let imageView = imageViews[index]
-            guard let image = imageView.image else { continue }
-            setupZoomForImage(scrollView: scrollView, imageView: imageView, image: image)
-        }
+        pageControl.currentPage = viewModel.currentIndex
     }
 
-    private func setupZoomForImage(scrollView: UIScrollView, imageView: UIImageView, image: UIImage) {
-        let scrollViewSize = scrollView.bounds.size
-        guard scrollViewSize.width > 0, scrollViewSize.height > 0 else {
-            return
-        }
-
-        let imageSize = image.size
-        guard imageSize.width > 0, imageSize.height > 0 else {
-            return
-        }
-        let widthScale = scrollViewSize.width / imageSize.width
-        let heightScale = scrollViewSize.height / imageSize.height
-        let fitScale = min(widthScale, heightScale)
-        
-        let fittedSize = CGSize(
-            width: imageSize.width * fitScale,
-            height: imageSize.height * fitScale
-        )
-        imageView.frame = CGRect(origin: .zero, size: fittedSize)
-        
-        scrollView.contentSize = fittedSize
-        
-        let minimumZoomScale = min(widthScale, heightScale)
-        
-        scrollView.minimumZoomScale = minimumZoomScale
-        scrollView.maximumZoomScale = max(minimumZoomScale * 3, 3)
-
-        if scrollView.zoomScale != scrollView.minimumZoomScale {
-            scrollView.zoomScale = scrollView.minimumZoomScale
-        }
-        
-        let verticalInset = max(0, (scrollViewSize.height - imageView.frame.height) / 2)
-        let horizontalInset = max(0, (scrollViewSize.width - imageView.frame.width) / 2)
-        scrollView.contentInset = UIEdgeInsets(
-            top: verticalInset,
-            left: horizontalInset,
-            bottom: verticalInset,
-            right: horizontalInset
-        )
-        scrollView.contentOffset = CGPoint(x: -horizontalInset, y: -verticalInset)
-    }
-    
-    private func updateFullscreenState() {
-        let systemName = isFullscreen ? "arrow.down.forward.and.arrow.up.backward" : "arrow.up.backward.and.arrow.down.forward"
-        let image = UIImage(systemName: systemName)
-        fullscreenButton.setImage(image, for: .normal)
-        
-        UIView.animate(withDuration: 0.3) {
-            self.navigationController?.setNavigationBarHidden(self.isFullscreen, animated: true)
+    private func updateChrome(animated: Bool) {
+        let changes = {
+            self.backButton.alpha = self.isChromeHidden ? 0 : 1
+            self.rightStack.alpha = self.isChromeHidden ? 0 : 1
+            self.pageControl.alpha = self.isChromeHidden ? 0 : 1
             self.setNeedsStatusBarAppearanceUpdate()
-            
-            self.backButton.alpha = self.isFullscreen ? 0 : 1
-            self.fullscreenButton.alpha = self.isFullscreen ? 0 : 1
-            self.pageControl.alpha = self.isFullscreen ? 0 : 1
         }
+        if animated {
+            UIView.animate(withDuration: 0.25, animations: changes)
+        } else {
+            changes()
+        }
+        let iconName = isChromeHidden
+            ? "arrow.down.forward.and.arrow.up.backward"
+            : "arrow.up.backward.and.arrow.down.forward"
+        fullscreenButton.setImage(UIImage(systemName: iconName), for: .normal)
     }
-    
-    @objc private func backButtonTapped() {
+
+    private func toggleChrome() {
+        isChromeHidden.toggle()
+    }
+
+    @objc private func handleBack() {
         navigationController?.popViewController(animated: true)
     }
-    
-    @objc private func fullscreenButtonTapped() {
-        isFullscreen.toggle()
-    }
-    
-    @objc private func handleTap() {
-        isFullscreen.toggle()
-    }
-    
-    @objc private func handleDoubleTap(_ gesture: UITapGestureRecognizer) {
-        let currentScrollView = imageScrollViews[pageControl.currentPage]
-        if currentScrollView.zoomScale > currentScrollView.minimumZoomScale {
-            currentScrollView.setZoomScale(currentScrollView.minimumZoomScale, animated: true)
-        } else {
-            let location = gesture.location(in: imageViews[pageControl.currentPage])
-            let zoomRect = zoomRectForScale(
-                scale: currentScrollView.maximumZoomScale,
-                center: location
-            )
-            currentScrollView.zoom(to: zoomRect, animated: true)
-        }
-    }
-    
-    private func zoomRectForScale(scale: CGFloat, center: CGPoint) -> CGRect {
-        let currentScrollView = imageScrollViews[pageControl.currentPage]
-        let width = currentScrollView.frame.width / scale
-        let height = currentScrollView.frame.height / scale
-        return CGRect(
-            x: center.x - width / 2,
-            y: center.y - height / 2,
-            width: width,
-            height: height
-        )
-    }
-    
-    @objc private func shareButtonTapped() {
-        let currentImageURL = viewModel.getImageURL(forIndex: pageControl.currentPage)
-        guard let url = currentImageURL else { return }
-        
-        let activityViewController = UIActivityViewController(activityItems: [url.absoluteString], applicationActivities: nil)
-        
-        if let popover = activityViewController.popoverPresentationController {
+
+    @objc private func handleShare() {
+        guard let url = viewModel.shareURL(for: viewModel.currentIndex) else { return }
+        let activity = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        if let popover = activity.popoverPresentationController {
             popover.sourceView = shareButton
             popover.sourceRect = shareButton.bounds
         }
-        
-        present(activityViewController, animated: true)
+        present(activity, animated: true)
     }
-    
-    @objc private func pageControlValueChanged() {
-        scrollToPage(index: pageControl.currentPage, animated: true)
+
+    @objc private func handleFullscreen() {
+        toggleChrome()
     }
-    
-    override var prefersStatusBarHidden: Bool {
-        return isFullscreen
-    }
-    
-    override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
-        return .fade
+
+    @objc private func handlePageControl() {
+        let index = pageControl.currentPage
+        viewModel.updateCurrentIndex(index)
+        scrollToCurrentPage(animated: true)
+        viewModel.loadItem(at: index)
     }
 }
 
-extension ImageViewerViewController: UIScrollViewDelegate {
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        if scrollView == pageScrollView {
-            let width = scrollView.bounds.width
-            guard width.isFinite, width > 0 else { return }
-            let pageIndex = round(scrollView.contentOffset.x / width)
-            guard pageIndex.isFinite else { return }
-            guard pageControl.numberOfPages > 0 else { return }
-            let clampedIndex = max(0, min(Int(pageIndex), pageControl.numberOfPages - 1))
-            if pageControl.currentPage != clampedIndex {
-                pageControl.currentPage = clampedIndex
+extension ImageViewerViewController: UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        viewModel.totalImagesCount
+    }
+
+    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        guard let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: ImageViewerPageCell.reuseIdentifier,
+            for: indexPath
+        ) as? ImageViewerPageCell else {
+            return UICollectionViewCell()
+        }
+        let state = viewModel.state(at: indexPath.item)
+        cell.configure(with: state)
+        cell.resetZoom()
+        cell.onRetry = { [weak viewModel] in
+            viewModel?.retryItem(at: indexPath.item)
+        }
+        cell.onSingleTap = { [weak self] in
+            self?.toggleChrome()
+        }
+        cell.onDoubleTap = { [weak self] point in
+            guard let self else { return }
+            guard let visibleCell = self.collectionView.cellForItem(at: indexPath) as? ImageViewerPageCell else {
+                return
             }
+            visibleCell.zoom(at: point)
         }
+        return cell
     }
-    
-    func viewForZooming(in scrollView: UIScrollView) -> UIView? {
-        for (index, imageScrollView) in imageScrollViews.enumerated() where scrollView == imageScrollView {
-            return imageViews[index]
-        }
-        return nil
-    }
-    
-    func scrollViewDidZoom(_ scrollView: UIScrollView) {
-        for (index, imageScrollView) in imageScrollViews.enumerated() where scrollView == imageScrollView {
-            let imageView = imageViews[index]
-            let scrollViewSize = scrollView.bounds.size
-            let imageViewSize = imageView.frame.size
-            
-            let verticalInset = max(0, (scrollViewSize.height - imageViewSize.height) / 2)
-            let horizontalInset = max(0, (scrollViewSize.width - imageViewSize.width) / 2)
-            
-            scrollView.contentInset = UIEdgeInsets(
-                top: verticalInset,
-                left: horizontalInset,
-                bottom: verticalInset,
-                right: horizontalInset
-            )
-        }
-    }
-}
 
-private enum ImageViewerLayoutConstants {
-    static let backButtonTopOffset: CGFloat = 16
-    static let backButtonLeadingOffset: CGFloat = 16
-    static let fullscreenButtonTopOffset: CGFloat = 16
-    static let fullscreenButtonTrailingOffset: CGFloat = -16
-    static let fullscreenButtonSize = CGSize(width: 44, height: 44)
-    static let shareButtonTopOffset: CGFloat = 16
-    static let shareButtonSpacing: CGFloat = 16
-    static let shareButtonSize = CGSize(width: 44, height: 44)
-    static let pageControlBottomOffset: CGFloat = 16
-    
-    enum ButtonInsets {
-        static let top: CGFloat = 8
-        static let left: CGFloat = 16
-        static let bottom: CGFloat = 8
-        static let right: CGFloat = 16
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        viewModel.loadItem(at: indexPath.item)
+        if let pageCell = cell as? ImageViewerPageCell {
+            pageCell.prepareForDisplay()
+        }
+    }
+
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        viewModel.cancelItem(at: indexPath.item)
+        if let cell = cell as? ImageViewerPageCell {
+            cell.resetZoom()
+        }
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView == collectionView else { return }
+        let width = scrollView.bounds.width
+        guard width > 0, width.isFinite else { return }
+        let rawPage = scrollView.contentOffset.x / width
+        let page = Int(round(rawPage))
+        guard page >= 0, page < viewModel.totalImagesCount else { return }
+        if viewModel.currentIndex != page {
+            viewModel.updateCurrentIndex(page)
+        }
+    }
+
+    func collectionView(
+        _ collectionView: UICollectionView,
+        layout collectionViewLayout: UICollectionViewLayout,
+        sizeForItemAt indexPath: IndexPath
+    ) -> CGSize {
+        collectionView.bounds.size
     }
 }

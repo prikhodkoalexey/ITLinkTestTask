@@ -9,7 +9,11 @@ struct ImageViewerAssembly {
         self.galleryImageLoader = galleryImageLoader
     }
     
-    func makeImageViewerViewController(imageURL: URL, allImageURLs: [URL], currentIndex: Int) -> ImageViewerViewController {
+    func makeImageViewerViewController(
+        imageURL: URL,
+        allImageURLs: [URL],
+        currentIndex: Int
+    ) -> ImageViewerViewController {
         let viewModel = ImageViewerViewModel(
             imageLoader: galleryImageLoader,
             imageURL: imageURL,
