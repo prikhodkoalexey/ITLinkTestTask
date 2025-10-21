@@ -10,7 +10,7 @@ enum ImageVariant {
 
 final class GalleryImageLoader {
     private let fetchImageData: FetchGalleryImageDataUseCase
-    private let cache = NSCache<NSURL, UIImage>()
+    private let cache = NSCache<NSString, UIImage>()
     private let decodingQueue = DispatchQueue(label: "gallery.image.decoding", qos: .userInitiated)
 
     init(fetchImageData: FetchGalleryImageDataUseCase) {
@@ -23,19 +23,25 @@ final class GalleryImageLoader {
         variant: ImageVariant = .thumbnail(targetSize: CGSize(width: 150, height: 150), scale: 1.0)
     ) async throws -> UIImage {
         let cacheKey = makeCacheKey(for: url, variant: variant)
-        
-        if let cached = cache.object(forKey: cacheKey as NSURL) {
+
+        if let cached = cache.object(forKey: cacheKey as NSString) {
             return cached
         }
-        
-        let imageDataVariant: ImageDataVariant = (variant == .original) ? .original : .thumbnail
+
+        let imageDataVariant: ImageDataVariant
+        switch variant {
+        case .original:
+            imageDataVariant = .original
+        case .thumbnail:
+            imageDataVariant = .thumbnail
+        }
         let data = try await fetchImageData.execute(
             url: url,
             variant: imageDataVariant
         )
         let image = try await decodeImage(data: data, variant: variant)
-        
-        cache.setObject(image, forKey: cacheKey as NSURL)
+
+        cache.setObject(image, forKey: cacheKey as NSString)
         return image
     }
     
@@ -53,16 +59,17 @@ final class GalleryImageLoader {
             decodingQueue.async {
                 switch variant {
                 case .original:
-                    // For original images, decode without thumbnail scaling
-                    guard let cgImage = CGImage(data: data as CFData) else {
+                    guard
+                        let source = CGImageSourceCreateWithData(data as CFData, nil),
+                        let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil)
+                    else {
                         continuation.resume(throwing: ImageDecodingError.failed)
                         return
                     }
                     let image = UIImage(cgImage: cgImage, scale: UIScreen.main.scale, orientation: .up)
                     continuation.resume(returning: image)
-                    
+
                 case .thumbnail(let targetSize, let scale):
-                    // For thumbnails, use the existing thumbnail scaling
                     let options: [CFString: Any] = [
                         kCGImageSourceCreateThumbnailFromImageAlways: true,
                         kCGImageSourceCreateThumbnailWithTransform: true,

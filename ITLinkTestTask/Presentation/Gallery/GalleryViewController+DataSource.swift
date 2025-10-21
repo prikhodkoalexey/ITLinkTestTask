@@ -124,4 +124,33 @@ extension GalleryViewController: UICollectionViewDelegate {
         imageTasks[indexPath]?.cancel()
         imageTasks[indexPath] = nil
     }
+
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard indexPath.item < currentItems.count else { return }
+        let item = currentItems[indexPath.item]
+        switch item {
+        case .image(let image):
+            let allImageURLs = currentItems.compactMap { galleryItem in
+                if case .image(let galleryImage) = galleryItem {
+                    return galleryImage.url
+                }
+                return nil
+            }
+            let currentIndex = currentItems.firstIndex { galleryItem in
+                if case .image(let galleryImage) = galleryItem {
+                    return galleryImage.url == image.url
+                }
+                return false
+            } ?? 0
+            let imageViewerAssembly = ImageViewerAssembly(galleryImageLoader: imageLoader)
+            let imageViewerViewController = imageViewerAssembly.makeImageViewerViewController(
+                imageURL: image.url,
+                allImageURLs: allImageURLs,
+                currentIndex: currentIndex
+            )
+            navigationController?.pushViewController(imageViewerViewController, animated: true)
+        case .placeholder:
+            break
+        }
+    }
 }
