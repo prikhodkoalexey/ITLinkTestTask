@@ -23,15 +23,13 @@ final class ImageViewerViewRobot {
     
     @discardableResult
     func waitForBackButton(timeout: TimeInterval = 10) -> Self {
-        let backButton = app.buttons["Назад"]
-        XCTAssertTrue(backButton.waitForExistence(timeout: timeout))
+        XCTAssertTrue(backButton().waitForExistence(timeout: timeout))
         return self
     }
     
     @discardableResult
     func tapBackButton() -> Self {
-        let backButton = app.buttons["Назад"]
-        backButton.tap()
+        backButton().tap()
         return self
     }
     
@@ -72,11 +70,25 @@ final class ImageViewerViewRobot {
     }
     
     func isBackButtonExists() -> Bool {
-        return app.buttons["Назад"].exists
+        return backButton().exists
     }
     
     func isImageViewVisible() -> Bool {
         let imageView = app.images.element(boundBy: 0)
         return imageView.exists && imageView.isHittable
+    }
+}
+
+private extension ImageViewerViewRobot {
+    enum Identifiers {
+        static let backButton = "image-viewer-back-button"
+    }
+
+    func backButton() -> XCUIElement {
+        let button = app.buttons[Identifiers.backButton]
+        if button.exists {
+            return button
+        }
+        return app.otherElements[Identifiers.backButton]
     }
 }

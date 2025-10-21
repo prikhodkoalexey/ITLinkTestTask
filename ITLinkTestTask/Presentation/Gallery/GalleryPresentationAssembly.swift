@@ -15,10 +15,11 @@ struct GalleryPresentationAssembly {
             refreshSnapshot: { try await domain.refreshSnapshot.execute() }
         )
         let imageLoader = GalleryImageLoader(fetchImageData: domain.fetchImageData)
-        return GalleryViewController(
+        let galleryViewController = GalleryViewController(
             viewModel: viewModel,
             imageLoader: imageLoader,
             reachability: reachability
         )
+        return UINavigationController(rootViewController: galleryViewController)
     }
 }

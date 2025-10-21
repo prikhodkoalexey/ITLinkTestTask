@@ -14,7 +14,7 @@ final class ImageViewerViewControllerUITests: XCTestCase {
             "UITESTING": "1",
             "UITEST_GALLERY_MODE": "stub"
         ]
-        robot = ImageViewerViewRobot(app: app)
+        robot = nil
     }
     
     override func tearDownWithError() throws {
@@ -70,5 +70,10 @@ final class ImageViewerViewControllerUITests: XCTestCase {
         app.launchArguments = baseArguments
         app.launchEnvironment = baseEnvironment
         app.launch()
+        GalleryViewRobot(app: app)
+            .waitForGrid()
+            .tapFirstImage()
+        robot = ImageViewerViewRobot(app: app)
+            .waitForImageView()
     }
 }

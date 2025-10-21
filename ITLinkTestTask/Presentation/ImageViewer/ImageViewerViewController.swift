@@ -35,6 +35,7 @@ final class ImageViewerViewController: UIViewController {
             bottom: ImageViewerLayoutConstants.ButtonInsets.bottom,
             right: ImageViewerLayoutConstants.ButtonInsets.right
         )
+        button.accessibilityIdentifier = Accessibility.backButton
         return button
     }()
     
@@ -405,8 +406,15 @@ final class ImageViewerViewController: UIViewController {
 extension ImageViewerViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         if scrollView == pageScrollView {
-            let pageIndex = round(scrollView.contentOffset.x / scrollView.bounds.width)
-            pageControl.currentPage = Int(pageIndex)
+            let width = scrollView.bounds.width
+            guard width.isFinite, width > 0 else { return }
+            let pageIndex = round(scrollView.contentOffset.x / width)
+            guard pageIndex.isFinite else { return }
+            guard pageControl.numberOfPages > 0 else { return }
+            let clampedIndex = max(0, min(Int(pageIndex), pageControl.numberOfPages - 1))
+            if pageControl.currentPage != clampedIndex {
+                pageControl.currentPage = clampedIndex
+            }
         }
     }
     
