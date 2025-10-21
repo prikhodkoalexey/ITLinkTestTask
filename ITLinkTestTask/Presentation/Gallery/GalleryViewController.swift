@@ -2,7 +2,7 @@ import UIKit
 
 final class GalleryViewController: UIViewController {
     let viewModel: GalleryViewModel
-    let imageLoader: GalleryImageLoader
+    let imageLoader: GalleryImageLoading
     let reachability: ReachabilityService
 
     let layout = UICollectionViewFlowLayout()
@@ -68,7 +68,7 @@ final class GalleryViewController: UIViewController {
 
     init(
         viewModel: GalleryViewModel,
-        imageLoader: GalleryImageLoader,
+        imageLoader: GalleryImageLoading,
         reachability: ReachabilityService
     ) {
         self.viewModel = viewModel

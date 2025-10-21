@@ -6,7 +6,8 @@ final class ImageViewerViewModelTests: XCTestCase {
     private let testURL = URL(string: "https://example.com/image.jpg")!
 
     func testInitialState() {
-        let viewModel = makeViewModel(result: .success(Data()))
+        let loader = StubGalleryImageLoader(result: .success(UIImage()))
+        let viewModel = makeViewModel(loader: loader)
         var capturedStates: [ImageViewerViewState] = []
         viewModel.onStateChange = { state in
             capturedStates.append(state)
@@ -16,8 +17,9 @@ final class ImageViewerViewModelTests: XCTestCase {
 
     func testLoadImageSuccess() {
         let expectation = expectation(description: "loaded")
-        let imageData = UIImage(systemName: "photo")!.pngData()!
-        let viewModel = makeViewModel(result: .success(imageData))
+        let stubImage = UIImage(systemName: "photo")!
+        let loader = StubGalleryImageLoader(result: .success(stubImage))
+        let viewModel = makeViewModel(loader: loader)
         var capturedStates: [ImageViewerViewState] = []
         viewModel.onStateChange = { state in
             capturedStates.append(state)
@@ -27,7 +29,7 @@ final class ImageViewerViewModelTests: XCTestCase {
         wait(for: [expectation], timeout: 1.0)
         XCTAssertEqual(capturedStates.count, 1)
         if case .loaded(let image) = capturedStates[0] {
-            XCTAssertNotNil(image)
+            XCTAssertEqual(image.pngData(), stubImage.pngData())
         } else {
             XCTFail("Expected loaded state with image")
         }
@@ -35,7 +37,8 @@ final class ImageViewerViewModelTests: XCTestCase {
 
     func testLoadImageFailure() {
         let expectation = expectation(description: "error")
-        let viewModel = makeViewModel(result: .failure(StubError.failed))
+        let loader = StubGalleryImageLoader(result: .failure(StubError.failed))
+        let viewModel = makeViewModel(loader: loader)
         var capturedStates: [ImageViewerViewState] = []
         viewModel.onStateChange = { state in
             capturedStates.append(state)
@@ -52,19 +55,9 @@ final class ImageViewerViewModelTests: XCTestCase {
 }
 
 private extension ImageViewerViewModelTests {
-    func makeViewModel(result: Result<Data, Error>) -> ImageViewerViewModel {
-        let repository = StubGalleryRepository { url, _ in
-            switch result {
-            case .success(let data):
-                return data
-            case .failure(let error):
-                throw error
-            }
-        }
-        let useCase = FetchGalleryImageDataUseCase(repository: repository)
-        let imageLoader = GalleryImageLoader(fetchImageData: useCase)
-        return ImageViewerViewModel(
-            imageLoader: imageLoader,
+    func makeViewModel(loader: GalleryImageLoading) -> ImageViewerViewModel {
+        ImageViewerViewModel(
+            imageLoader: loader,
             imageURL: testURL,
             allImageURLs: [testURL],
             currentIndex: 0
@@ -76,26 +69,19 @@ private enum StubError: Error {
     case failed
 }
 
-private struct StubGalleryRepository: GalleryRepository {
-    let imageDataProvider: @Sendable (URL, ImageDataVariant) async throws -> Data
+private final class StubGalleryImageLoader: GalleryImageLoading {
+    var result: Result<UIImage, Error>
 
-    func loadInitialSnapshot() async throws -> GallerySnapshot {
-        GallerySnapshot(
-            sourceURL: URL(string: "https://example.com/links.txt")!,
-            fetchedAt: Date(),
-            items: []
-        )
+    init(result: Result<UIImage, Error>) {
+        self.result = result
     }
 
-    func refreshSnapshot() async throws -> GallerySnapshot {
-        try await loadInitialSnapshot()
-    }
-
-    func imageData(for url: URL, variant: ImageDataVariant) async throws -> Data {
-        try await imageDataProvider(url, variant)
-    }
-
-    func metadata(for url: URL) async throws -> ImageMetadata {
-        ImageMetadata(format: .unknown, mimeType: nil, originalURL: url)
+    func image(for url: URL, variant: ImageVariant) async throws -> UIImage {
+        switch result {
+        case .success(let image):
+            return image
+        case .failure(let error):
+            throw error
+        }
     }
 }

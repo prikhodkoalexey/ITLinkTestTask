@@ -8,7 +8,11 @@ enum ImageVariant {
     case original
 }
 
-final class GalleryImageLoader {
+protocol GalleryImageLoading: AnyObject {
+    func image(for url: URL, variant: ImageVariant) async throws -> UIImage
+}
+
+final class GalleryImageLoader: GalleryImageLoading {
     private let fetchImageData: FetchGalleryImageDataUseCase
     private let cache = NSCache<NSString, UIImage>()
     private let decodingQueue = DispatchQueue(label: "gallery.image.decoding", qos: .userInitiated)

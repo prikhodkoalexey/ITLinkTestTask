@@ -1,10 +1,10 @@
 import Foundation
 
 struct ImageViewerAssembly {
-    private let galleryImageLoader: GalleryImageLoader
-    
+    private let galleryImageLoader: GalleryImageLoading
+
     init(
-        galleryImageLoader: GalleryImageLoader
+        galleryImageLoader: GalleryImageLoading
     ) {
         self.galleryImageLoader = galleryImageLoader
     }
