@@ -8,16 +8,17 @@ enum ImageViewerViewState {
 }
 
 final class ImageViewerViewModel {
-    private let imageLoader: GalleryImageLoader
+    private let imageLoader: GalleryImageLoading
     private let imageURL: URL
     private let allImageURLs: [URL]
     private let currentIndex: Int
-    
+    private var loadTask: Task<Void, Never>?
+
     var onStateChange: ((ImageViewerViewState) -> Void)?
     var onImageLoaded: (() -> Void)?
     
     init(
-        imageLoader: GalleryImageLoader,
+        imageLoader: GalleryImageLoading,
         imageURL: URL,
         allImageURLs: [URL],
         currentIndex: Int
@@ -29,7 +30,9 @@ final class ImageViewerViewModel {
     }
     
     func loadImage() {
-        Task {
+        loadTask?.cancel()
+        loadTask = Task { [weak self] in
+            guard let self else { return }
             await performLoad()
         }
     }
@@ -92,5 +95,9 @@ final class ImageViewerViewModel {
                 onStateChange?(.error)
             }
         }
+    }
+
+    deinit {
+        loadTask?.cancel()
     }
 }

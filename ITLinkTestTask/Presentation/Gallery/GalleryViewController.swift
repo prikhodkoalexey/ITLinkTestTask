@@ -2,7 +2,7 @@ import UIKit
 
 final class GalleryViewController: UIViewController {
     let viewModel: GalleryViewModel
-    let imageLoader: GalleryImageLoader
+    let imageLoader: GalleryImageLoading
     let reachability: ReachabilityService
 
     let layout = UICollectionViewFlowLayout()
@@ -68,7 +68,7 @@ final class GalleryViewController: UIViewController {
 
     init(
         viewModel: GalleryViewModel,
-        imageLoader: GalleryImageLoader,
+        imageLoader: GalleryImageLoading,
         reachability: ReachabilityService
     ) {
         self.viewModel = viewModel
@@ -108,39 +108,5 @@ final class GalleryViewController: UIViewController {
         tasks.forEach { $0.cancel() }
         imageTasks.values.forEach { $0.cancel() }
         stopReachabilityMonitoring()
-    }
-}
-
-extension GalleryViewController: UICollectionViewDelegate {
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard indexPath.item < currentItems.count else { return }
-        
-        let item = currentItems[indexPath.item]
-        switch item {
-        case .image(let image):
-            let allImageURLs = currentItems.compactMap { galleryItem in
-                if case .image(let galleryImage) = galleryItem {
-                    return galleryImage.url
-                }
-                return nil
-            }
-            
-            let currentIndex = currentItems.firstIndex { galleryItem in
-                if case .image(let galleryImage) = galleryItem {
-                    return galleryImage.url == image.url
-                }
-                return false
-            } ?? 0
-            
-            let imageViewerAssembly = ImageViewerAssembly(galleryImageLoader: imageLoader)
-            let imageViewerViewController = imageViewerAssembly.makeImageViewerViewController(
-                imageURL: image.url,
-                allImageURLs: allImageURLs,
-                currentIndex: currentIndex
-            )
-            navigationController?.pushViewController(imageViewerViewController, animated: true)
-        case .placeholder:
-            break
-        }
     }
 }

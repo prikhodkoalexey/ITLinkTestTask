@@ -35,6 +35,7 @@ final class ImageViewerViewController: UIViewController {
             bottom: ImageViewerLayoutConstants.ButtonInsets.bottom,
             right: ImageViewerLayoutConstants.ButtonInsets.right
         )
+        button.accessibilityIdentifier = Accessibility.backButton
         return button
     }()
     
@@ -113,8 +114,11 @@ final class ImageViewerViewController: UIViewController {
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        updatePageContentSize()
-        scrollToPage(index: viewModel.currentIndexInGallery, animated: false)
+        UIView.performWithoutAnimation {
+            updatePageContentSize()
+            scrollToPage(index: viewModel.currentIndexInGallery, animated: false)
+            updateZoomScalesForImages()
+        }
     }
     
     private func setupView() {
@@ -203,17 +207,15 @@ final class ImageViewerViewController: UIViewController {
         
         pageScrollView.subviews.forEach { $0.removeFromSuperview() }
         
-        for i in 0..<totalImages {
+        for _ in 0..<totalImages {
             let scrollContainer = createScrollView()
             let imageView = createImageView()
-            
+
             scrollContainer.addSubview(imageView)
             pageScrollView.addSubview(scrollContainer)
-            
+
             imageScrollViews.append(scrollContainer)
             imageViews.append(imageView)
-            
-            setupImageConstraints(imageView: imageView, scrollView: scrollContainer, index: i)
         }
     }
     
@@ -231,21 +233,10 @@ final class ImageViewerViewController: UIViewController {
     
     private func createImageView() -> UIImageView {
         let imageView = UIImageView()
-        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.translatesAutoresizingMaskIntoConstraints = true
         imageView.contentMode = .scaleAspectFit
         imageView.backgroundColor = .systemBackground
         return imageView
-    }
-    
-    private func setupImageConstraints(imageView: UIImageView, scrollView: UIScrollView, index: Int) {
-        NSLayoutConstraint.activate([
-            imageView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            imageView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            imageView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            imageView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            imageView.widthAnchor.constraint(equalTo: pageScrollView.widthAnchor),
-            imageView.heightAnchor.constraint(equalTo: pageScrollView.heightAnchor)
-        ])
     }
     
     private func updatePageContentSize() {
@@ -286,40 +277,62 @@ final class ImageViewerViewController: UIViewController {
         case .loaded(let image):
             activityIndicator.stopAnimating()
             currentImageView.image = image
-            setupZoomForImage(scrollView: currentScrollView, imageView: currentImageView)
+            setupZoomForImage(scrollView: currentScrollView, imageView: currentImageView, image: image)
         case .error:
             activityIndicator.stopAnimating()
         }
     }
     
-    private func setupZoomForImage(scrollView: UIScrollView, imageView: UIImageView) {
-        guard let image = imageView.image else { return }
-        
-        let imageViewSize = image.size
-        let aspectRatio = imageViewSize.width / imageViewSize.height
-        
+    private func updateZoomScalesForImages() {
+        guard imageScrollViews.count == imageViews.count else { return }
+        for index in 0..<imageScrollViews.count {
+            let scrollView = imageScrollViews[index]
+            let imageView = imageViews[index]
+            guard let image = imageView.image else { continue }
+            setupZoomForImage(scrollView: scrollView, imageView: imageView, image: image)
+        }
+    }
+
+    private func setupZoomForImage(scrollView: UIScrollView, imageView: UIImageView, image: UIImage) {
         let scrollViewSize = scrollView.bounds.size
-        let scrollViewRatio = scrollViewSize.width / scrollViewSize.height
+        guard scrollViewSize.width > 0, scrollViewSize.height > 0 else {
+            return
+        }
+
+        let imageSize = image.size
+        guard imageSize.width > 0, imageSize.height > 0 else {
+            return
+        }
+        let widthScale = scrollViewSize.width / imageSize.width
+        let heightScale = scrollViewSize.height / imageSize.height
+        let fitScale = min(widthScale, heightScale)
         
-        if aspectRatio > scrollViewRatio {
-            let width = scrollViewSize.width
-            let height = width / aspectRatio
-            imageView.frame = CGRect(x: 0, y: (scrollViewSize.height - height) / 2, width: width, height: height)
-        } else {
-            let height = scrollViewSize.height
-            let width = height * aspectRatio
-            imageView.frame = CGRect(x: (scrollViewSize.width - width) / 2, y: 0, width: width, height: height)
+        let fittedSize = CGSize(
+            width: imageSize.width * fitScale,
+            height: imageSize.height * fitScale
+        )
+        imageView.frame = CGRect(origin: .zero, size: fittedSize)
+        
+        scrollView.contentSize = fittedSize
+        
+        let minimumZoomScale = min(widthScale, heightScale)
+        
+        scrollView.minimumZoomScale = minimumZoomScale
+        scrollView.maximumZoomScale = max(minimumZoomScale * 3, 3)
+
+        if scrollView.zoomScale != scrollView.minimumZoomScale {
+            scrollView.zoomScale = scrollView.minimumZoomScale
         }
         
-        scrollView.contentSize = imageView.frame.size
-        
-        let minimumZoomScale = min(
-            scrollViewSize.width / imageView.frame.width,
-            scrollViewSize.height / imageView.frame.height
+        let verticalInset = max(0, (scrollViewSize.height - imageView.frame.height) / 2)
+        let horizontalInset = max(0, (scrollViewSize.width - imageView.frame.width) / 2)
+        scrollView.contentInset = UIEdgeInsets(
+            top: verticalInset,
+            left: horizontalInset,
+            bottom: verticalInset,
+            right: horizontalInset
         )
-        
-        scrollView.minimumZoomScale = min(minimumZoomScale, 1.0)
-        scrollView.zoomScale = scrollView.minimumZoomScale
+        scrollView.contentOffset = CGPoint(x: -horizontalInset, y: -verticalInset)
     }
     
     private func updateFullscreenState() {
@@ -405,8 +418,15 @@ final class ImageViewerViewController: UIViewController {
 extension ImageViewerViewController: UIScrollViewDelegate {
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         if scrollView == pageScrollView {
-            let pageIndex = round(scrollView.contentOffset.x / scrollView.bounds.width)
-            pageControl.currentPage = Int(pageIndex)
+            let width = scrollView.bounds.width
+            guard width.isFinite, width > 0 else { return }
+            let pageIndex = round(scrollView.contentOffset.x / width)
+            guard pageIndex.isFinite else { return }
+            guard pageControl.numberOfPages > 0 else { return }
+            let clampedIndex = max(0, min(Int(pageIndex), pageControl.numberOfPages - 1))
+            if pageControl.currentPage != clampedIndex {
+                pageControl.currentPage = clampedIndex
+            }
         }
     }
     

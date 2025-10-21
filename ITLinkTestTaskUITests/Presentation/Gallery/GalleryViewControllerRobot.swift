@@ -27,6 +27,18 @@ struct GalleryViewRobot {
     }
 
     @discardableResult
+    func tapFirstImage(file: StaticString = #file, line: UInt = #line) -> Self {
+        let firstCell = app.collectionViews.cells.matching(identifier: Identifiers.galleryCell).element(boundBy: 0)
+        guard firstCell.waitForExistence(timeout: 5) else {
+            XCTFail("First gallery cell not found", file: file, line: line)
+            return self
+        }
+        let coordinate = firstCell.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        coordinate.tap()
+        return self
+    }
+
+    @discardableResult
     func tapRetry(file: StaticString = #file, line: UInt = #line) -> Self {
         let button = app.buttons[Identifiers.retryButton]
         guard button.waitForExistence(timeout: 5) else {
