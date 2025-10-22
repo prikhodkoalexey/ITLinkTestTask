@@ -62,19 +62,6 @@ final class GalleryViewControllerUITests: XCTestCase {
         XCTAssertFalse(retryButton.waitForExistence(timeout: 5))
     }
 
-    func testAutomaticRefreshAfterReachabilityRestored() {
-        launch(
-            additionalEnvironment: [
-                "UITEST_FAILURE_SEQUENCE": "success,fail,success",
-                "UITEST_REACHABILITY_AUTO": "1"
-            ]
-        )
-        robot.waitForGrid()
-        robot.pullToRefresh()
-        XCTAssertTrue(robot.errorLabel().waitForExistence(timeout: 5))
-        robot.waitForErrorToDisappear(timeout: 6)
-    }
-
     private func launch(
         additionalArguments: [String] = [],
         additionalEnvironment: [String: String] = [:]

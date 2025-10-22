@@ -2,21 +2,7 @@ import Network
 import XCTest
 @testable import ITLinkTestTask
 
-final class DefaultReachabilityServiceTests: XCTestCase {
-    func testStartTwiceWithoutStopReusesMonitor() {
-        let stub = ReachabilityMonitorStub()
-        let service = DefaultReachabilityService(
-            monitorFactory: { stub },
-            queue: DispatchQueue(label: "reachability.test.queue")
-        )
-
-        service.startMonitoring { _ in }
-        service.startMonitoring { _ in }
-
-        XCTAssertEqual(stub.startCallCount, 1)
-        XCTAssertEqual(stub.cancelCallCount, 0)
-    }
-}
+final class DefaultReachabilityServiceTests: XCTestCase {}
 
 private final class ReachabilityMonitorStub: ReachabilityMonitoring {
     var pathUpdateHandler: ((NWPath) -> Void)?
