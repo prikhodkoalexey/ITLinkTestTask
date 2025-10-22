@@ -13,8 +13,9 @@ final class ImageDataCacheTests: XCTestCase {
             fileManager: env.fileManager
         )
         let data = Data([0, 1, 2])
-        try await cache.store(data, for: URL(string: "https://example.com/a.png")!, variant: .thumbnail)
-        let loaded = try await cache.data(for: URL(string: "https://example.com/a.png")!, variant: .thumbnail)
+        let variant = ImageDataVariant.thumbnail(maxPixelSize: 150)
+        try await cache.store(data, for: URL(string: "https://example.com/a.png")!, variant: variant)
+        let loaded = try await cache.data(for: URL(string: "https://example.com/a.png")!, variant: variant)
         XCTAssertEqual(loaded, data)
     }
 
@@ -28,9 +29,10 @@ final class ImageDataCacheTests: XCTestCase {
             fileManager: env.fileManager
         )
         let url = URL(string: "https://example.com/a.png")!
-        try await cache.store(Data([0]), for: url, variant: .thumbnail)
-        try await cache.remove(for: url, variant: .thumbnail)
-        let loaded = try await cache.data(for: url, variant: .thumbnail)
+        let variant = ImageDataVariant.thumbnail(maxPixelSize: 90)
+        try await cache.store(Data([0]), for: url, variant: variant)
+        try await cache.remove(for: url, variant: variant)
+        let loaded = try await cache.data(for: url, variant: variant)
         XCTAssertNil(loaded)
     }
 
@@ -47,19 +49,20 @@ final class ImageDataCacheTests: XCTestCase {
         )
         let firstURL = URL(string: "https://example.com/a.png")!
         let secondURL = URL(string: "https://example.com/b.png")!
-        try await cache.store(Data([0, 0, 0, 0, 0]), for: firstURL, variant: .thumbnail)
-        let firstFile = try env.store.fileURL(
-            in: .thumbnails,
-            fileName: hasher.makeFileName(for: firstURL.absoluteString, fileExtension: firstURL.pathExtension)
-        )
+        let variant = ImageDataVariant.thumbnail(maxPixelSize: 64)
+        try await cache.store(Data([0, 0, 0, 0, 0]), for: firstURL, variant: variant)
+        let thumbnailsDirectory = try env.store.directoryURL(for: .thumbnails)
+        let firstContents = try env.fileManager.contentsOfDirectory(at: thumbnailsDirectory, includingPropertiesForKeys: nil)
+        XCTAssertEqual(firstContents.count, 1)
+        let firstFile = firstContents[0]
         try FileManager.default.setAttributes(
             [.modificationDate: Date(timeIntervalSince1970: 0)],
             ofItemAtPath: firstFile.path
         )
-        try await cache.store(Data([1, 1, 1, 1, 1]), for: secondURL, variant: .thumbnail)
-        let first = try await cache.data(for: firstURL, variant: .thumbnail)
+        try await cache.store(Data([1, 1, 1, 1, 1]), for: secondURL, variant: variant)
+        let first = try await cache.data(for: firstURL, variant: variant)
         XCTAssertNil(first)
-        let second = try await cache.data(for: secondURL, variant: .thumbnail)
+        let second = try await cache.data(for: secondURL, variant: variant)
         XCTAssertNotNil(second)
     }
 

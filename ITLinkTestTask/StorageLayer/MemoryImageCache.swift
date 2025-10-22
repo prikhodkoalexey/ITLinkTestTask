@@ -31,15 +31,19 @@ final class DefaultMemoryImageCache: MemoryImageCaching, @unchecked Sendable {
     }
 
     func data(for url: URL, variant: ImageDataVariant) -> Data? {
-        cache(for: variant).object(forKey: key(for: url)) as Data?
+        cache(for: variant).object(forKey: key(for: url, variant: variant)) as Data?
     }
 
     func store(_ data: Data, for url: URL, variant: ImageDataVariant) {
-        cache(for: variant).setObject(data as NSData, forKey: key(for: url), cost: data.count)
+        cache(for: variant).setObject(
+            data as NSData,
+            forKey: key(for: url, variant: variant),
+            cost: data.count
+        )
     }
 
     func remove(for url: URL, variant: ImageDataVariant) {
-        cache(for: variant).removeObject(forKey: key(for: url))
+        cache(for: variant).removeObject(forKey: key(for: url, variant: variant))
     }
 
     func clear() {
@@ -56,7 +60,7 @@ final class DefaultMemoryImageCache: MemoryImageCaching, @unchecked Sendable {
         }
     }
 
-    private func key(for url: URL) -> NSString {
-        NSString(string: url.absoluteString)
+    private func key(for url: URL, variant: ImageDataVariant) -> NSString {
+        NSString(string: variant.cacheKey(for: url))
     }
 }

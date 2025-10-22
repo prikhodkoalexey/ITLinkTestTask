@@ -1,7 +1,7 @@
 import Foundation
 
-enum ImageDataVariant {
-    case thumbnail
+enum ImageDataVariant: Hashable {
+    case thumbnail(maxPixelSize: Int)
     case original
 
     var namespace: DiskStoreNamespace {
@@ -10,6 +10,25 @@ enum ImageDataVariant {
             return .thumbnails
         case .original:
             return .originals
+        }
+    }
+
+    func cacheKey(for url: URL) -> String {
+        switch self {
+        case .thumbnail(let size):
+            return "\(url.absoluteString)|thumbnail|\(size)"
+        case .original:
+            return url.absoluteString
+        }
+    }
+
+    func fileExtension(for url: URL) -> String? {
+        switch self {
+        case .thumbnail:
+            return "png"
+        case .original:
+            let ext = url.pathExtension
+            return ext.isEmpty ? nil : ext
         }
     }
 }
@@ -80,8 +99,10 @@ actor DefaultImageDataCache: ImageDataCaching {
     }
 
     private func fileURL(for url: URL, variant: ImageDataVariant) throws -> URL {
-        let ext = url.pathExtension
-        let fileName = hasher.makeFileName(for: url.absoluteString, fileExtension: ext.isEmpty ? nil : ext)
+        let fileName = hasher.makeFileName(
+            for: variant.cacheKey(for: url),
+            fileExtension: variant.fileExtension(for: url)
+        )
         return try store.fileURL(in: variant.namespace, fileName: fileName)
     }
 
