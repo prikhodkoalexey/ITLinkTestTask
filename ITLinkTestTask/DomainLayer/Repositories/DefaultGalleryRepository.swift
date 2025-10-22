@@ -1,4 +1,6 @@
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 
 actor DefaultGalleryRepository: GalleryRepository {
     private let remoteService: RemoteGalleryService
@@ -51,10 +53,23 @@ actor DefaultGalleryRepository: GalleryRepository {
             memoryCache.store(data, for: url, variant: variant)
             return data
         }
-        let data = try await downloadImage(from: url)
-        try await diskCache.store(data, for: url, variant: variant)
-        memoryCache.store(data, for: url, variant: variant)
-        return data
+        switch variant {
+        case .original:
+            let data = try await downloadImage(from: url)
+            try await diskCache.store(data, for: url, variant: variant)
+            memoryCache.store(data, for: url, variant: variant)
+            return data
+        case .thumbnail(let maxPixelSize):
+            let originalData = try await imageData(for: url, variant: .original)
+            let thumbnailData = try makeThumbnailData(
+                from: originalData,
+                maxPixelSize: maxPixelSize,
+                url: url
+            )
+            try await diskCache.store(thumbnailData, for: url, variant: variant)
+            memoryCache.store(thumbnailData, for: url, variant: variant)
+            return thumbnailData
+        }
     }
 
     func metadata(for url: URL) async throws -> ImageMetadata {
@@ -115,6 +130,28 @@ actor DefaultGalleryRepository: GalleryRepository {
         } catch {
             throw GalleryRepositoryError.imageDataUnavailable(url)
         }
+    }
+
+    private func makeThumbnailData(from data: Data, maxPixelSize: Int, url: URL) throws -> Data {
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceThumbnailMaxPixelSize: max(1, maxPixelSize)
+        ]
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else {
+            throw GalleryRepositoryError.imageDataUnavailable(url)
+        }
+        let destinationData = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(destinationData, UTType.png.identifier as CFString, 1, nil) else {
+            throw GalleryRepositoryError.imageDataUnavailable(url)
+        }
+        CGImageDestinationAddImage(destination, cgImage, nil)
+        guard CGImageDestinationFinalize(destination) else {
+            throw GalleryRepositoryError.imageDataUnavailable(url)
+        }
+        return destinationData as Data
     }
 }
 

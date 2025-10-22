@@ -36,8 +36,9 @@ final class GalleryImageLoader: GalleryImageLoading {
         switch variant {
         case .original:
             imageDataVariant = .original
-        case .thumbnail:
-            imageDataVariant = .thumbnail
+        case .thumbnail(let targetSize, let scale):
+            let maxPixelSize = Self.thumbnailPixelSize(for: targetSize, scale: scale)
+            imageDataVariant = .thumbnail(maxPixelSize: maxPixelSize)
         }
         let data = try await fetchImageData.execute(
             url: url,

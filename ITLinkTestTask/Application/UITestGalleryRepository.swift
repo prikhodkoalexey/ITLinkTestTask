@@ -7,11 +7,16 @@ struct UITestGalleryConfiguration {
 }
 
 actor UITestGalleryRepository: GalleryRepository {
+    private struct CacheKey: Hashable {
+        let url: URL
+        let variant: ImageDataVariant
+    }
+
     private let configuration: UITestGalleryConfiguration
     private let snapshot: GallerySnapshot
     private var didFailOnce = false
     private var remainingSequence: [LaunchArguments.FailureStep]
-    private var cachedImageData: [URL: Data] = [:]
+    private var cachedImageData: [CacheKey: Data] = [:]
 
     init(configuration: UITestGalleryConfiguration) {
         self.configuration = configuration
@@ -32,11 +37,19 @@ actor UITestGalleryRepository: GalleryRepository {
     }
 
     func imageData(for url: URL, variant: ImageDataVariant) async throws -> Data {
-        if let cached = cachedImageData[url] {
+        let key = CacheKey(url: url, variant: variant)
+        if let cached = cachedImageData[key] {
             return cached
         }
-        let data = await Self.renderImageData(for: url)
-        cachedImageData[url] = data
+        let data: Data
+        switch variant {
+        case .original:
+            data = await Self.renderImageData(for: url)
+        case .thumbnail(let maxPixelSize):
+            let original = try await imageData(for: url, variant: .original)
+            data = await Self.renderThumbnailData(from: original, maxPixelSize: maxPixelSize)
+        }
+        cachedImageData[key] = data
         return data
     }
 
@@ -152,6 +165,24 @@ actor UITestGalleryRepository: GalleryRepository {
                 indexString.draw(at: textOrigin, withAttributes: attributes)
             }
             return image.pngData() ?? Data()
+        }
+    }
+
+    private nonisolated static func renderThumbnailData(from data: Data, maxPixelSize: Int) async -> Data {
+        await MainActor.run {
+            guard let image = UIImage(data: data) else { return data }
+            let maxDimension = max(1, maxPixelSize)
+            let originalMax = max(image.size.width, image.size.height)
+            let scale = originalMax == 0 ? 1 : min(1, CGFloat(maxDimension) / originalMax)
+            let targetSize = CGSize(
+                width: max(1, image.size.width * scale),
+                height: max(1, image.size.height * scale)
+            )
+            let renderer = UIGraphicsImageRenderer(size: targetSize)
+            let thumbnail = renderer.image { _ in
+                image.draw(in: CGRect(origin: .zero, size: targetSize))
+            }
+            return thumbnail.pngData() ?? data
         }
     }
 

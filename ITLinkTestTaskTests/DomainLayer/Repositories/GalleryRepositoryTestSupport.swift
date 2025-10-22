@@ -101,21 +101,12 @@ actor RecordingLinksFileCache: LinksFileCaching {
 
 actor RecordingImageDataCache: ImageDataCaching {
     private struct Key: Hashable {
-        let urlString: String
-        let variantIdentifier: String
+        let identifier: String
+        let namespace: DiskStoreNamespace
 
         init(url: URL, variant: ImageDataVariant) {
-            urlString = url.absoluteString
-            variantIdentifier = Key.identifier(for: variant)
-        }
-
-        static func identifier(for variant: ImageDataVariant) -> String {
-            switch variant {
-            case .thumbnail:
-                return "thumbnail"
-            case .original:
-                return "original"
-            }
+            identifier = variant.cacheKey(for: url)
+            namespace = variant.namespace
         }
     }
 
@@ -142,8 +133,7 @@ actor RecordingImageDataCache: ImageDataCaching {
 
     func clear(variant: ImageDataVariant) async throws {
         clearCalls += 1
-        let identifier = Key.identifier(for: variant)
-        storage = storage.filter { $0.key.variantIdentifier != identifier }
+        storage = storage.filter { $0.key.namespace != variant.namespace }
     }
 
     func setData(_ data: Data?, for url: URL, variant: ImageDataVariant) async {
@@ -170,6 +160,10 @@ actor RecordingImageDataCache: ImageDataCaching {
     func clearCallCount() async -> Int {
         clearCalls
     }
+
+    func storedData(for url: URL, variant: ImageDataVariant) async -> Data? {
+        storage[Key(url: url, variant: variant)]
+    }
 }
 
 final class RecordingMemoryImageCache: MemoryImageCaching, @unchecked Sendable {
@@ -177,16 +171,7 @@ final class RecordingMemoryImageCache: MemoryImageCaching, @unchecked Sendable {
         let rawValue: String
 
         init(url: URL, variant: ImageDataVariant) {
-            rawValue = url.absoluteString + "|" + Key.identifier(for: variant)
-        }
-
-        static func identifier(for variant: ImageDataVariant) -> String {
-            switch variant {
-            case .thumbnail:
-                return "thumbnail"
-            case .original:
-                return "original"
-            }
+            rawValue = variant.cacheKey(for: url)
         }
     }
 

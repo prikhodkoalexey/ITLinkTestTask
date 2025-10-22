@@ -15,7 +15,7 @@ protocol ReachabilityService {
 }
 
 protocol ReachabilityMonitoring: AnyObject {
-    var pathUpdateHandler: ((NWPath) -> Void)? { get set }
+    var pathUpdateHandler: (@Sendable (NWPath) -> Void)? { get set }
     func start(queue: DispatchQueue)
     func cancel()
 }
