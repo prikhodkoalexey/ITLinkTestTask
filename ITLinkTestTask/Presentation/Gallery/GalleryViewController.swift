@@ -65,6 +65,7 @@ final class GalleryViewController: UIViewController {
     var imageTasks: [IndexPath: Task<Void, Never>] = [:]
     var currentItems: [GalleryItem] = []
     var isReachabilityMonitoring = false
+    var failedThumbnailURLs: Set<URL> = []
 
     init(
         viewModel: GalleryViewModel,

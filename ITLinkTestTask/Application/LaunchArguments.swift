@@ -12,6 +12,11 @@ struct LaunchArguments {
         case once
     }
 
+    enum ThumbnailFailureMode {
+        case none
+        case once
+    }
+
     enum FailureStep: String {
         case fail
         case success
@@ -21,6 +26,7 @@ struct LaunchArguments {
     let galleryMode: GalleryMode
     let failureMode: FailureMode
     let failureSequence: [FailureStep]
+    let thumbnailFailureMode: ThumbnailFailureMode
 
     static func current() -> LaunchArguments {
         let processInfo = ProcessInfo.processInfo
@@ -30,11 +36,13 @@ struct LaunchArguments {
         let galleryMode = resolveGalleryMode(arguments: arguments, environment: environment)
         let failureSequence = resolveFailureSequence(environment: environment)
         let failureMode = resolveFailureMode(arguments: arguments, environment: environment)
+        let thumbnailFailureMode = resolveThumbnailFailureMode(environment: environment)
         return LaunchArguments(
             isUITesting: isUITesting,
             galleryMode: galleryMode,
             failureMode: failureMode,
-            failureSequence: failureSequence
+            failureSequence: failureSequence,
+            thumbnailFailureMode: thumbnailFailureMode
         )
     }
 
@@ -74,5 +82,17 @@ struct LaunchArguments {
             return .once
         }
         return .none
+    }
+
+    private static func resolveThumbnailFailureMode(environment: [String: String]) -> ThumbnailFailureMode {
+        guard let value = environment["UITEST_THUMBNAIL_FAILURE"]?.lowercased() else {
+            return .none
+        }
+        switch value {
+        case "once":
+            return .once
+        default:
+            return .none
+        }
     }
 }

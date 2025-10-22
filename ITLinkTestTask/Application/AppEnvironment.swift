@@ -48,7 +48,8 @@ struct AppEnvironment {
             let networking = NetworkingAssembly(linksEndpoint: endpoint)
             let configuration = UITestGalleryConfiguration(
                 failureMode: arguments.failureMode,
-                failureSequence: arguments.failureSequence
+                failureSequence: arguments.failureSequence,
+                thumbnailFailureMode: arguments.thumbnailFailureMode
             )
             let repository = UITestGalleryRepository(configuration: configuration)
             let gallery = GalleryDomainAssembly(repository: repository)

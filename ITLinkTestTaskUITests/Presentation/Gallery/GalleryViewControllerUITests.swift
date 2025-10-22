@@ -49,7 +49,36 @@ final class GalleryViewControllerUITests: XCTestCase {
         XCTAssertTrue(app.buttons[GalleryViewRobot.Identifiers.retryButton].exists)
     }
 
-    private func launch(additionalArguments: [String] = []) {
+    func testThumbnailRetryRecoversPreview() {
+        launch(
+            additionalEnvironment: [
+                "UITEST_THUMBNAIL_FAILURE": "once"
+            ]
+        )
+        robot.waitForGrid()
+        let retryButton = robot.thumbnailRetryButton(at: 0)
+        XCTAssertTrue(retryButton.waitForExistence(timeout: 5))
+        robot.tapThumbnailRetry(at: 0)
+        XCTAssertFalse(retryButton.waitForExistence(timeout: 5))
+    }
+
+    func testAutomaticRefreshAfterReachabilityRestored() {
+        launch(
+            additionalEnvironment: [
+                "UITEST_FAILURE_SEQUENCE": "success,fail,success",
+                "UITEST_REACHABILITY_AUTO": "1"
+            ]
+        )
+        robot.waitForGrid()
+        robot.pullToRefresh()
+        XCTAssertTrue(robot.errorLabel().waitForExistence(timeout: 5))
+        robot.waitForErrorToDisappear(timeout: 6)
+    }
+
+    private func launch(
+        additionalArguments: [String] = [],
+        additionalEnvironment: [String: String] = [:]
+    ) {
         var environment = baseEnvironment
         if additionalArguments.contains("--force-network-error") {
             environment["UITEST_FAILURE_MODE"] = "always"
@@ -60,6 +89,9 @@ final class GalleryViewControllerUITests: XCTestCase {
         } else {
             environment["UITEST_FAILURE_MODE"] = nil
             environment["UITEST_FAILURE_SEQUENCE"] = nil
+        }
+        additionalEnvironment.forEach { key, value in
+            environment[key] = value
         }
         app.launchEnvironment = environment
         app.launchArguments = baseArguments + additionalArguments

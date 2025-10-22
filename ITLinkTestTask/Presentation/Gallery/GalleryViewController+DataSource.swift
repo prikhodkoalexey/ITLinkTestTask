@@ -12,11 +12,13 @@ extension GalleryViewController {
             let item = currentItems[identifier]
             switch item {
             case let .image(image):
-                let cell = collectionView.dequeueReusableCell(
+                guard let cell = collectionView.dequeueReusableCell(
                     withReuseIdentifier: GalleryImageCell.reuseIdentifier,
                     for: indexPath
-                ) as? GalleryImageCell
-                cell?.configure(image: nil, accessibilityLabel: image.originalLine)
+                ) as? GalleryImageCell else {
+                    return nil
+                }
+                configureImageCell(cell, with: image)
                 return cell
             case let .placeholder(placeholder):
                 let cell = collectionView.dequeueReusableCell(
@@ -29,8 +31,28 @@ extension GalleryViewController {
         }
     }
 
+    func configureImageCell(_ cell: GalleryImageCell, with image: GalleryImage) {
+        cell.configure(image: nil, accessibilityLabel: image.originalLine)
+        cell.onRetry = { [weak self, weak cell] in
+            guard let self, let cell, let indexPath = collectionView.indexPath(for: cell) else { return }
+            failedThumbnailURLs.remove(image.url)
+            cell.configure(image: nil, accessibilityLabel: image.originalLine)
+            loadImage(for: image, at: indexPath, cell: cell)
+        }
+        if failedThumbnailURLs.contains(image.url) {
+            cell.showErrorOverlay()
+        }
+    }
+
     func applySnapshot(with items: [GalleryItem]) {
         currentItems = items
+        let validURLs = Set(items.compactMap { item -> URL? in
+            if case .image(let image) = item {
+                return image.url
+            }
+            return nil
+        })
+        failedThumbnailURLs = failedThumbnailURLs.intersection(validURLs)
         var snapshot = NSDiffableDataSourceSnapshot<Int, Int>()
         snapshot.appendSections([0])
         snapshot.appendItems(Array(items.indices), toSection: 0)
@@ -63,12 +85,15 @@ extension GalleryViewController {
                         case let .image(currentImage) = currentItems[identifier],
                         currentImage == image
                     else { return }
+                    failedThumbnailURLs.remove(image.url)
                     cell.configure(image: uiImage, accessibilityLabel: image.originalLine)
                 }
             } catch {
                 await MainActor.run {
                     guard let cell else { return }
+                    failedThumbnailURLs.insert(image.url)
                     cell.configure(image: nil, accessibilityLabel: image.originalLine)
+                    configureImageCell(cell, with: image)
                 }
             }
             await MainActor.run { [weak self] in
@@ -96,6 +121,10 @@ extension GalleryViewController {
                 let cell = collectionView.cellForItem(at: indexPath) as? GalleryImageCell,
                 imageTasks[indexPath] == nil
             else { continue }
+            if failedThumbnailURLs.contains(image.url) {
+                cell.showErrorOverlay()
+                continue
+            }
             loadImage(for: image, at: indexPath, cell: cell)
         }
     }
@@ -113,6 +142,11 @@ extension GalleryViewController: UICollectionViewDelegate {
             case let .image(image) = currentItems[identifier],
             let imageCell = cell as? GalleryImageCell
         else { return }
+        configureImageCell(imageCell, with: image)
+        if failedThumbnailURLs.contains(image.url) {
+            imageCell.showErrorOverlay()
+            return
+        }
         loadImage(for: image, at: indexPath, cell: imageCell)
     }
 
@@ -142,6 +176,12 @@ extension GalleryViewController: UICollectionViewDelegate {
                 }
                 return false
             } ?? 0
+            if failedThumbnailURLs.contains(image.url) {
+                if let cell = collectionView.cellForItem(at: indexPath) as? GalleryImageCell {
+                    cell.onRetry?()
+                }
+                return
+            }
             let imageViewerAssembly = ImageViewerAssembly(galleryImageLoader: imageLoader)
             let imageViewerViewController = imageViewerAssembly.makeImageViewerViewController(
                 imageURL: image.url,

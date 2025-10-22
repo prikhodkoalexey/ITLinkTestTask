@@ -4,6 +4,7 @@ import UIKit
 struct UITestGalleryConfiguration {
     let failureMode: LaunchArguments.FailureMode
     let failureSequence: [LaunchArguments.FailureStep]
+    let thumbnailFailureMode: LaunchArguments.ThumbnailFailureMode
 }
 
 actor UITestGalleryRepository: GalleryRepository {
@@ -17,6 +18,7 @@ actor UITestGalleryRepository: GalleryRepository {
     private var didFailOnce = false
     private var remainingSequence: [LaunchArguments.FailureStep]
     private var cachedImageData: [CacheKey: Data] = [:]
+    private var failedThumbnailURLs: Set<URL> = []
 
     init(configuration: UITestGalleryConfiguration) {
         self.configuration = configuration
@@ -46,6 +48,7 @@ actor UITestGalleryRepository: GalleryRepository {
         case .original:
             data = await Self.renderImageData(for: url)
         case .thumbnail(let maxPixelSize):
+            try evaluateThumbnailFailure(for: url)
             let original = try await imageData(for: url, variant: .original)
             data = await Self.renderThumbnailData(from: original, maxPixelSize: maxPixelSize)
         }
@@ -83,6 +86,19 @@ actor UITestGalleryRepository: GalleryRepository {
             didFailOnce = true
             NSLog("UI test stub: triggering one-time failure")
             throw NetworkingError.invalidURL("ui-test")
+        }
+    }
+
+    private func evaluateThumbnailFailure(for url: URL) throws {
+        switch configuration.thumbnailFailureMode {
+        case .none:
+            return
+        case .once:
+            if !failedThumbnailURLs.contains(url) {
+                failedThumbnailURLs.insert(url)
+                NSLog("UI test stub: triggering thumbnail failure for \(url)")
+                throw NetworkingError.invalidURL("ui-test-thumbnail")
+            }
         }
     }
 

@@ -49,7 +49,7 @@ extension GalleryViewController {
             hideMessage()
         }
 
-        if case .empty = state.content, state.error != nil {
+        if state.error != nil {
             startReachabilityMonitoring()
         } else {
             stopReachabilityMonitoring()

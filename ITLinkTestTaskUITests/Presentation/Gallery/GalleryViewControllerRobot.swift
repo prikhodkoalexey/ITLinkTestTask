@@ -61,10 +61,39 @@ struct GalleryViewRobot {
         app.staticTexts[Identifiers.errorLabel]
     }
 
+    func thumbnailRetryButton(at index: Int) -> XCUIElement {
+        let cell = app.collectionViews.cells.matching(identifier: Identifiers.galleryCell).element(boundBy: index)
+        return cell.buttons[Identifiers.thumbnailRetryButton]
+    }
+
+    @discardableResult
+    func waitForErrorToDisappear(timeout: TimeInterval = 5, file: StaticString = #file, line: UInt = #line) -> Self {
+        let element = errorLabel()
+        let predicate = NSPredicate(format: "exists == false")
+        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
+        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
+        if result != .completed {
+            XCTFail("Error indicator did not disappear", file: file, line: line)
+        }
+        return self
+    }
+
+    @discardableResult
+    func tapThumbnailRetry(at index: Int, file: StaticString = #file, line: UInt = #line) -> Self {
+        let button = thumbnailRetryButton(at: index)
+        guard button.waitForExistence(timeout: 5) else {
+            XCTFail("Thumbnail retry button not found", file: file, line: line)
+            return self
+        }
+        button.tap()
+        return self
+    }
+
     enum Identifiers {
         static let galleryCell = "gallery-cell"
         static let placeholderCell = "gallery-placeholder"
         static let retryButton = "gallery-retry-button"
         static let errorLabel = "gallery-error-label"
+        static let thumbnailRetryButton = "gallery-thumbnail-retry"
     }
 }
