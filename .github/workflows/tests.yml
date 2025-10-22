@@ -113,9 +113,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: "iPhone 17 iOS 26.0"
-            destination: "platform=iOS Simulator,name=iPhone 17,OS=26.0"
-            cache-key: ui-iph17-os260
+          - name: "iPhone 16 Pro iOS 18.6"
+            destination: "platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6"
+            cache-key: ui-iph16pro-os186
     timeout-minutes: 40
 
     steps:
@@ -123,6 +123,13 @@ jobs:
 
       - name: Select Xcode 26.0.1
         run: sudo xcode-select -switch /Applications/Xcode_26.0.1.app
+
+      - name: Reset simulators
+        run: |
+          set -eo pipefail
+          xcrun simctl shutdown all || true
+          xcrun simctl erase all || true
+          sudo pkill -9 -f CoreSimulator || true
 
       - name: Cache DerivedData
         uses: actions/cache@v4
