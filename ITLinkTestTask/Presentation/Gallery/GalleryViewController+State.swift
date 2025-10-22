@@ -81,13 +81,16 @@ extension GalleryViewController {
     func startReachabilityMonitoring() {
         guard !isReachabilityMonitoring else { return }
         isReachabilityMonitoring = true
+        lastReachabilityStatus = reachability.currentStatus
         reachability.startMonitoring { [weak self] status in
             guard let self else { return }
-            if status == .satisfied || status == .constrained {
-                stopReachabilityMonitoring()
-                startTask { [weak self] in
-                    await self?.viewModel.retry()
-                }
+            let previousStatus = lastReachabilityStatus
+            lastReachabilityStatus = status
+            let restored = recoveredConnection(from: previousStatus, to: status)
+            guard restored else { return }
+            stopReachabilityMonitoring()
+            startTask { [weak self] in
+                await self?.viewModel.retry()
             }
         }
     }
@@ -96,6 +99,20 @@ extension GalleryViewController {
         guard isReachabilityMonitoring else { return }
         reachability.stopMonitoring()
         isReachabilityMonitoring = false
+        lastReachabilityStatus = nil
+    }
+
+    func recoveredConnection(from previous: ReachabilityStatus?, to status: ReachabilityStatus) -> Bool {
+        guard status == .satisfied || status == .constrained else { return false }
+        guard let previous else {
+            return false
+        }
+        switch previous {
+        case .unsatisfied, .requiresConnection:
+            return true
+        case .constrained, .satisfied:
+            return false
+        }
     }
 
     @objc

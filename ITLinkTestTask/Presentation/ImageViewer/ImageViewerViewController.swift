@@ -3,6 +3,9 @@ import UIKit
 final class ImageViewerViewController: UIViewController {
     private let viewModel: ImageViewerViewModel
     private var previousNavigationBarHidden = false
+    private var backButtonTopConstraint: NSLayoutConstraint?
+    private var rightStackTopConstraint: NSLayoutConstraint?
+    private var pageControlBottomConstraint: NSLayoutConstraint?
 
     private lazy var collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
@@ -14,7 +17,7 @@ final class ImageViewerViewController: UIViewController {
         collectionView.isPagingEnabled = true
         collectionView.showsHorizontalScrollIndicator = false
         collectionView.showsVerticalScrollIndicator = false
-        collectionView.backgroundColor = .black
+        collectionView.backgroundColor = .clear
         collectionView.contentInsetAdjustmentBehavior = .never
         collectionView.accessibilityIdentifier = Accessibility.collectionView
         return collectionView
@@ -24,9 +27,9 @@ final class ImageViewerViewController: UIViewController {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setImage(UIImage(systemName: "chevron.backward"), for: .normal)
-        button.tintColor = .white
+        button.tintColor = .label
         button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
-        button.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        button.backgroundColor = .clear
         button.layer.cornerRadius = 22
         button.accessibilityIdentifier = Accessibility.backButton
         button.accessibilityLabel = "Назад"
@@ -36,9 +39,9 @@ final class ImageViewerViewController: UIViewController {
     private let shareButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        button.backgroundColor = .clear
         button.layer.cornerRadius = 22
-        button.tintColor = .white
+        button.tintColor = .label
         button.setImage(UIImage(systemName: "square.and.arrow.up"), for: .normal)
         button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         button.accessibilityIdentifier = Accessibility.shareButton
@@ -49,9 +52,9 @@ final class ImageViewerViewController: UIViewController {
     private let fullscreenButton: UIButton = {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.backgroundColor = UIColor.black.withAlphaComponent(0.45)
+        button.backgroundColor = .clear
         button.layer.cornerRadius = 22
-        button.tintColor = .white
+        button.tintColor = .label
         button.setImage(UIImage(systemName: "arrow.up.backward.and.arrow.down.forward"), for: .normal)
         button.contentEdgeInsets = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
         button.accessibilityIdentifier = Accessibility.fullscreenButton
@@ -71,8 +74,14 @@ final class ImageViewerViewController: UIViewController {
         let control = UIPageControl()
         control.translatesAutoresizingMaskIntoConstraints = false
         control.hidesForSinglePage = true
-        control.pageIndicatorTintColor = UIColor.white.withAlphaComponent(0.4)
-        control.currentPageIndicatorTintColor = .white
+        control.pageIndicatorTintColor = UIColor { trait in
+            trait.userInterfaceStyle == .dark
+                ? UIColor.white.withAlphaComponent(0.4)
+                : UIColor.label.withAlphaComponent(0.3)
+        }
+        control.currentPageIndicatorTintColor = UIColor { trait in
+            trait.userInterfaceStyle == .dark ? .white : .label
+        }
         control.accessibilityIdentifier = Accessibility.pageControl
         return control
     }()
@@ -99,6 +108,7 @@ final class ImageViewerViewController: UIViewController {
         setupBindings()
         collectionView.reloadData()
         collectionView.layoutIfNeeded()
+        updateChromePadding(for: traitCollection.userInterfaceStyle)
         moveToInitialPage()
         updatePageControl()
         viewModel.start()
@@ -138,9 +148,19 @@ final class ImageViewerViewController: UIViewController {
         super.viewWillTransition(to: size, with: coordinator)
         coordinator.animate(alongsideTransition: { [weak self] _ in
             self?.collectionView.collectionViewLayout.invalidateLayout()
+            if let style = self?.traitCollection.userInterfaceStyle {
+                self?.updateChromePadding(for: style)
+            }
         }, completion: { [weak self] _ in
             self?.scrollToCurrentPage(animated: false)
+            self?.refreshVisibleCellsLayout()
         })
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else { return }
+        updateChromePadding(for: traitCollection.userInterfaceStyle)
     }
 
     private func setupView() {
@@ -162,21 +182,26 @@ final class ImageViewerViewController: UIViewController {
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
 
             backButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
             backButton.widthAnchor.constraint(equalToConstant: 44),
             backButton.heightAnchor.constraint(equalToConstant: 44),
 
             rightStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            rightStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
 
             shareButton.widthAnchor.constraint(equalToConstant: 44),
             shareButton.heightAnchor.constraint(equalToConstant: 44),
             fullscreenButton.widthAnchor.constraint(equalToConstant: 44),
             fullscreenButton.heightAnchor.constraint(equalToConstant: 44),
 
-            pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            pageControl.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16)
+            pageControl.centerXAnchor.constraint(equalTo: view.centerXAnchor)
         ])
+
+        backButtonTopConstraint = backButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8)
+        rightStackTopConstraint = rightStack.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8)
+        pageControlBottomConstraint = pageControl.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16)
+
+        NSLayoutConstraint.activate(
+            [backButtonTopConstraint, rightStackTopConstraint, pageControlBottomConstraint].compactMap { $0 }
+        )
 
         backButton.addTarget(self, action: #selector(handleBack), for: .touchUpInside)
         shareButton.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
@@ -218,6 +243,54 @@ final class ImageViewerViewController: UIViewController {
     private func updatePageControl() {
         pageControl.numberOfPages = viewModel.totalImagesCount
         pageControl.currentPage = viewModel.currentIndex
+    }
+
+    private func updateChromePadding(for style: UIUserInterfaceStyle) {
+        let metrics = chromeMetrics(for: style)
+        backButtonTopConstraint?.constant = metrics.topInset
+        rightStackTopConstraint?.constant = metrics.topInset
+        pageControlBottomConstraint?.constant = -metrics.bottomInset
+
+        let colors = viewerColors(for: style)
+        view.backgroundColor = colors.background
+        collectionView.backgroundColor = colors.background
+        backButton.backgroundColor = colors.chromeBackground
+        shareButton.backgroundColor = colors.chromeBackground
+        fullscreenButton.backgroundColor = colors.chromeBackground
+
+        view.layoutIfNeeded()
+    }
+
+    private func chromeMetrics(for style: UIUserInterfaceStyle) -> (topInset: CGFloat, bottomInset: CGFloat) {
+        switch style {
+        case .dark:
+            return (topInset: 20, bottomInset: 28)
+        case .light, .unspecified:
+            return (topInset: 6, bottomInset: 16)
+        @unknown default:
+            return (topInset: 6, bottomInset: 16)
+        }
+    }
+
+    private func viewerColors(for style: UIUserInterfaceStyle) -> (background: UIColor, chromeBackground: UIColor) {
+        switch style {
+        case .dark:
+            let chrome = UIColor.black.withAlphaComponent(0.45)
+            return (background: .black, chromeBackground: chrome)
+        case .light, .unspecified:
+            let chrome = UIColor.systemBackground.withAlphaComponent(0.75)
+            return (background: .systemBackground, chromeBackground: chrome)
+        @unknown default:
+            let chrome = UIColor.systemBackground.withAlphaComponent(0.75)
+            return (background: .systemBackground, chromeBackground: chrome)
+        }
+    }
+
+    private func refreshVisibleCellsLayout() {
+        for cell in collectionView.visibleCells {
+            guard let pageCell = cell as? ImageViewerPageCell else { continue }
+            pageCell.prepareForDisplay()
+        }
     }
 
     private func updateChrome(animated: Bool) {
