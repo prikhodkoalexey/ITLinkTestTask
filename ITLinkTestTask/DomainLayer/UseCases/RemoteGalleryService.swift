@@ -58,18 +58,52 @@ final class DefaultRemoteGalleryService: RemoteGalleryService {
     }
 
     private func waitForRetry(after delay: TimeInterval) async throws {
-        if reachability.currentStatus == .satisfied {
+        if isReachable(reachability.currentStatus) {
             try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
             return
         }
 
-        try await withCheckedThrowingContinuation { continuation in
-            reachability.startMonitoring { status in
-                if status == .satisfied || status == .constrained {
+        let lock = NSLock()
+        var continuation: CheckedContinuation<Void, Error>?
+
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (inner: CheckedContinuation<Void, Error>) in
+                lock.lock()
+                continuation = inner
+                lock.unlock()
+
+                reachability.startMonitoring { [weak self] status in
+                    guard let self, self.isReachable(status) else { return }
                     self.reachability.stopMonitoring()
-                    continuation.resume()
+
+                    lock.lock()
+                    guard let pending = continuation else {
+                        lock.unlock()
+                        return
+                    }
+                    continuation = nil
+                    lock.unlock()
+                    pending.resume(returning: ())
                 }
             }
+        } onCancel: {
+            reachability.stopMonitoring()
+            lock.lock()
+            let pending = continuation
+            continuation = nil
+            lock.unlock()
+            pending?.resume(throwing: CancellationError())
+        }
+
+        try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+    }
+
+    private func isReachable(_ status: ReachabilityStatus) -> Bool {
+        switch status {
+        case .satisfied, .constrained:
+            return true
+        case .unsatisfied, .requiresConnection:
+            return false
         }
     }
 }

@@ -49,9 +49,9 @@ final class ImageViewerPageCell: UICollectionViewCell, UIScrollViewDelegate {
         let button = UIButton(type: .system)
         button.translatesAutoresizingMaskIntoConstraints = false
         button.setTitle("Повторить", for: .normal)
-        button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(.label, for: .normal)
         button.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
-        button.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+        button.backgroundColor = .clear
         button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 24, bottom: 12, right: 24)
         button.layer.cornerRadius = 16
         button.isHidden = true
@@ -111,7 +111,7 @@ final class ImageViewerPageCell: UICollectionViewCell, UIScrollViewDelegate {
                 systemName: "exclamationmark.triangle.fill"
             )?.withRenderingMode(.alwaysTemplate)
             imageView.image = fallback
-            imageView.tintColor = .white
+            imageView.tintColor = .label
             errorButton.isHidden = false
         }
     }
@@ -145,7 +145,7 @@ final class ImageViewerPageCell: UICollectionViewCell, UIScrollViewDelegate {
 
     private func configure() {
         backgroundColor = .clear
-        contentView.backgroundColor = .black
+        applyTheme(for: traitCollection.userInterfaceStyle)
         scrollView.delegate = self
         scrollView.contentInsetAdjustmentBehavior = .never
         contentView.addSubview(scrollView)
@@ -175,6 +175,29 @@ final class ImageViewerPageCell: UICollectionViewCell, UIScrollViewDelegate {
         contentView.addGestureRecognizer(doubleTapRecognizer)
 
         errorButton.addTarget(self, action: #selector(handleRetry), for: .touchUpInside)
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        guard traitCollection.hasDifferentColorAppearance(comparedTo: previousTraitCollection) else { return }
+        applyTheme(for: traitCollection.userInterfaceStyle)
+    }
+
+    private func applyTheme(for style: UIUserInterfaceStyle) {
+        switch style {
+        case .dark:
+            contentView.backgroundColor = .black
+            errorButton.setTitleColor(.white, for: .normal)
+            errorButton.backgroundColor = UIColor.black.withAlphaComponent(0.6)
+        case .light, .unspecified:
+            contentView.backgroundColor = .systemBackground
+            errorButton.setTitleColor(.label, for: .normal)
+            errorButton.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.85)
+        @unknown default:
+            contentView.backgroundColor = .systemBackground
+            errorButton.setTitleColor(.label, for: .normal)
+            errorButton.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.85)
+        }
     }
 
     private func adjustImageLayout() {

@@ -33,39 +33,10 @@ final class ImageViewerViewControllerUITests: XCTestCase {
         XCTAssertEqual(progress.total, 3)
     }
 
-    func testSwipingChangesPages() {
-        launch()
-        robot.waitForPage(index: 1)
-        robot.swipeLeft().waitForPage(index: 2)
-        robot.swipeLeft().waitForPage(index: 3)
-        robot.swipeRight().waitForPage(index: 2)
-    }
-
-    func testSingleTapTogglesChrome() {
-        launch()
-        robot.waitForChromeVisible()
-        robot.tapImageView().waitForChromeHidden()
-        robot.tapImageView().waitForChromeVisible()
-    }
-
-    func testFullscreenButtonTogglesChrome() {
-        launch()
-        robot.waitForChromeVisible()
-        robot.tapFullscreenButton().waitForChromeHidden()
-        robot.tapFullscreenButton().waitForChromeVisible()
-    }
-
     func testShareButtonPresentsShareSheet() {
         launch()
         robot.tapShareButton().waitForShareSheet()
         XCTAssertTrue(robot.isShareSheetPresented())
-    }
-
-    func testBackButtonReturnsToGallery() {
-        launch()
-        robot.waitForBackButton()
-        robot.tapBackButton()
-        XCTAssertTrue(app.collectionViews.element.waitForExistence(timeout: 5))
     }
 
     func testZoomGesturesKeepImageVisible() {

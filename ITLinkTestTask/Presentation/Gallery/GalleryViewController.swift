@@ -66,6 +66,7 @@ final class GalleryViewController: UIViewController {
     var currentItems: [GalleryItem] = []
     var isReachabilityMonitoring = false
     var failedThumbnailURLs: Set<URL> = []
+    var lastReachabilityStatus: ReachabilityStatus?
 
     init(
         viewModel: GalleryViewModel,
