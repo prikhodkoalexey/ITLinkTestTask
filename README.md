@@ -1,25 +1,17 @@
 # ITLinkTestTask
 
-Тестовое приложение iOS, которое показывает галерею изображений с возможностями просмотра, шаринга и кэширования. Минимальная поддерживаемая версия iOS — 15.6. Тесты в CI гоняются на симуляторах iOS 17.5, локально проверено на iOS 26.0 (симулятор). Сборка выполнялась в Xcode 26.0.1 (17A400).
+Тестовое задание IT‑Link для iOS (Swift 5, Xcode 26.0.1). Минимальная версия системы — iOS 15.6, проект не требует внешних зависимостей и открывается прямо из `ITLinkTestTask.xcodeproj`. Полный текст задания лежит в репозитории (`Тестовое для Android и iOS.odt`).
 
-## Структура
-- `ITLinkTestTask` — основное приложение.
-- `ITLinkTestTaskTests` — модульные тесты.
-- `ITLinkTestTaskUITests` — UI-тесты.
-- `Scripts/` — вспомогательные утилиты (установка git hook-ов).
+## Что сделано
+Сделаны все основные и бонусные пункты задания:
+- **Автозагрузка и офлайн.** Ссылки подтягиваются при старте, снапшот сохраняется локально, повторные запуски поднимают галерею без сети. При восстановлении reachability загрузка перезапускается автоматически.
+- **Адаптивный грид.** Ширина ячейки 100–120 pt, одинаково работает на iPhone и iPad, поддерживаются light/dark; для невалидных строк выводятся плейсхолдеры.
+- **Кэширование превью и оригиналов.** Два уровня — диск (`Storage/thumbnails`, `Storage/originals`) и память. Повторные открытия не обращаются к сети, для неудачных загрузок есть кнопка повторить.
+- **Просмотрщик изображений.** Перелистывания, pinch/double tap zoom, переключение полноэкранного режима, предзагрузка соседних страниц и шаринг URL через `UIActivityViewController`.
+- **Архитектура.** В проекте четыре слоя (Networking → Storage → Domain → Presentation), собираемые через `AppEnvironment`; подробности — в [Docs/Architecture.md](Docs/Architecture.md).
 
-## CI на GitHub Actions
-- Workflow `CI` запускается для всех `push` и `pull_request` в ветки `main` и `feature/**`.
-- Используется `macos-14`, включена защита от параллельных прогонов (`concurrency`).
-- Джобы:
-  - **Unit Tests** — матрица симуляторов (`iPhone 15 iOS 17.5`, `iPhone 14 iOS 16.4`), кеширует DerivedData и артефакты SwiftPM, выгружает `.xcresult`.
-  - **UI Tests** — отдельный прогон UI-тестов на `iPhone 15 iOS 17.5` с публикацией отчёта.
-- Артефакты в `Actions` позволяют скачать результаты тестов и открыть их в Xcode.
+## Сборка и запуск
+- Открыть `ITLinkTestTask.xcodeproj`, выбрать схему `ITLinkTestTask` и запустить на симуляторе iOS 15.6+. Приложение проверено на iPhone 15 (iOS 17.5), iPhone 17 (iOS 26.0) и iPad (A16, iPadOS 26.0.1).
 
-## Локальный запуск
-- Тесты: `xcodebuild test -project ITLinkTestTask.xcodeproj -scheme ITLinkTestTask -destination "platform=iOS Simulator,name=iPhone 15,OS=17.5" -only-testing:ITLinkTestTaskTests`.
-- UI-тесты: `xcodebuild test ... -only-testing:ITLinkTestTaskUITests`.
-
-## Полезные команды
-- Установка git-хуков: `Scripts/install-git-hooks.sh`.
-- Очистка DerivedData: `rm -rf ~/Library/Developer/Xcode/DerivedData`.
+## Тестирование
+- 44 юнит‑теста (`ITLinkTestTaskTests`) и 8 UI‑тестов (`ITLinkTestTaskUITests`) закрывают репозиторий, кэши, reachability и основные пользовательские сценарии.
