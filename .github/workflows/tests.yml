@@ -14,20 +14,25 @@ concurrency:
 jobs:
   unit-tests:
     name: Unit Tests
-    runs-on: macos-14
+    runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.0.1.app/Contents/Developer
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: "iPhone 15 iOS 17.5"
-            destination: "platform=iOS Simulator,name=iPhone 15,OS=17.5"
-            cache-key: iph15-os175
-          - name: "iPhone 14 iOS 16.4"
-            destination: "platform=iOS Simulator,name=iPhone 14,OS=16.4"
-            cache-key: iph14-os164
+          - name: "iPhone 17 iOS 26.0"
+            destination: "platform=iOS Simulator,name=iPhone 17,OS=26.0"
+            cache-key: iph17-os260
+          - name: "iPhone 16 Pro iOS 18.6"
+            destination: "platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6"
+            cache-key: iph16pro-os186
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select Xcode 26.0.1
+        run: sudo xcode-select -switch /Applications/Xcode_26.0.1.app
 
       - name: Cache DerivedData
         uses: actions/cache@v4
@@ -65,7 +70,6 @@ jobs:
             -derivedDataPath "$DERIVED_PATH" \
             -resultBundlePath "$XCRESULT_PATH" \
             -only-testing:ITLinkTestTaskTests \
-            -allowProvisioningUpdates NO \
             -quiet \
             CODE_SIGNING_ALLOWED=NO
           echo "xcresult_path=$XCRESULT_PATH" >> "$GITHUB_OUTPUT"
@@ -79,19 +83,24 @@ jobs:
 
   ui-tests:
     name: UI Tests
-    runs-on: macos-14
+    runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.0.1.app/Contents/Developer
     needs: unit-tests
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: "iPhone 15 iOS 17.5"
-            destination: "platform=iOS Simulator,name=iPhone 15,OS=17.5"
-            cache-key: ui-iph15-os175
+          - name: "iPhone 17 iOS 26.0"
+            destination: "platform=iOS Simulator,name=iPhone 17,OS=26.0"
+            cache-key: ui-iph17-os260
     timeout-minutes: 40
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select Xcode 26.0.1
+        run: sudo xcode-select -switch /Applications/Xcode_26.0.1.app
 
       - name: Cache DerivedData
         uses: actions/cache@v4
@@ -129,7 +138,6 @@ jobs:
             -derivedDataPath "$DERIVED_PATH" \
             -resultBundlePath "$XCRESULT_PATH" \
             -only-testing:ITLinkTestTaskUITests \
-            -allowProvisioningUpdates NO \
             -quiet \
             CODE_SIGNING_ALLOWED=NO
           echo "xcresult_path=$XCRESULT_PATH" >> "$GITHUB_OUTPUT"
