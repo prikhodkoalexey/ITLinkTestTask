@@ -8,7 +8,7 @@
 - **Адаптивный грид.** Ширина ячейки 100–120 pt, одинаково работает на iPhone и iPad, поддерживаются light/dark; для невалидных строк выводятся плейсхолдеры.
 - **Кэширование превью и оригиналов.** Два уровня — диск (`Storage/thumbnails`, `Storage/originals`) и память. Повторные открытия не обращаются к сети, для неудачных загрузок есть кнопка повторить.
 - **Просмотрщик изображений.** Перелистывания, pinch/double tap zoom, переключение полноэкранного режима, предзагрузка соседних страниц и шаринг URL через `UIActivityViewController`.
-- **Архитектура.** В проекте четыре слоя (Networking → Storage → Domain → Presentation), собираемые через `AppEnvironment`; подробности — в [Docs/Architecture.md](Docs/Architecture.md).
+- **Архитектура.** В проекте четыре слоя (Networking → Storage → Domain → Presentation), собираемые через `AppEnvironment`; подробности — в [Docs/Architecture.md](Docs/Architecture.md). Документ удобно читать на гитхабе через гиперссылки.
 
 ## Сборка и запуск
 - Открыть `ITLinkTestTask.xcodeproj`, выбрать схему `ITLinkTestTask` и запустить на симуляторе iOS 15.6+. Приложение проверено на iPhone 15 (iOS 17.5), iPhone 17 (iOS 26.0) и iPad (A16, iPadOS 26.0.1).
