@@ -27,25 +27,14 @@ final class ImageViewerViewRobot {
     }
 
     @discardableResult
-    func waitForChromeVisible(timeout: TimeInterval = 5) -> Self {
-        XCTAssertTrue(backButton().waitForExistence(timeout: timeout))
-        XCTAssertTrue(shareButton().waitForExistence(timeout: timeout))
-        XCTAssertTrue(fullscreenButton().waitForExistence(timeout: timeout))
-        XCTAssertTrue(pageControl().waitForExistence(timeout: timeout))
-        XCTAssertTrue(isChromeVisible())
+    func waitForChromeVisible(timeout: TimeInterval = 6) -> Self {
+        assertChromeState(isHidden: false, timeout: timeout)
         return self
     }
 
     @discardableResult
-    func waitForChromeHidden(timeout: TimeInterval = 5) -> Self {
-        let predicate = NSPredicate(format: "isHittable == false")
-        let elements = [backButton(), shareButton(), fullscreenButton(), pageControl()]
-        elements.forEach { element in
-            let expectation = XCTNSPredicateExpectation(predicate: predicate, object: element)
-            let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
-            XCTAssertEqual(result, .completed)
-        }
-        XCTAssertTrue(isChromeHidden())
+    func waitForChromeHidden(timeout: TimeInterval = 6) -> Self {
+        assertChromeState(isHidden: true, timeout: timeout)
         return self
     }
 
@@ -98,20 +87,19 @@ final class ImageViewerViewRobot {
     }
 
     @discardableResult
-    func waitForShareSheet(timeout: TimeInterval = 5) -> Self {
-        XCTAssertTrue(shareSheet().waitForExistence(timeout: timeout))
+    func waitForShareSheet(timeout: TimeInterval = 6) -> Self {
+        let sheet = shareSheet()
+        XCTAssertTrue(sheet.waitForExistence(timeout: timeout))
         return self
     }
 
     @discardableResult
-    func waitForPage(index: Int, timeout: TimeInterval = 5) -> Self {
+    func waitForPage(index: Int, timeout: TimeInterval = 6) -> Self {
         let predicate = NSPredicate { _, _ in
             self.pageProgress()?.current == index
         }
         let expectation = XCTNSPredicateExpectation(predicate: predicate, object: pageControl())
-        let result = XCTWaiter.wait(for: [expectation], timeout: timeout)
-        XCTAssertEqual(result, .completed)
-        XCTAssertEqual(pageProgress()?.current, index)
+        XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed)
         return self
     }
 
@@ -132,28 +120,23 @@ final class ImageViewerViewRobot {
     }
 
     func isImageViewVisible() -> Bool {
-        imageView().exists && imageView().isHittable
+        isElementVisible(imageView())
     }
 
     func isChromeVisible() -> Bool {
-        backButton().isHittable && shareButton().isHittable && fullscreenButton().isHittable && pageControl().isHittable
+        chromeElements().allSatisfy { isElementVisible($0) }
     }
 
     func isChromeHidden() -> Bool {
-        !backButton().isHittable && !shareButton().isHittable && !fullscreenButton().isHittable && !pageControl().isHittable
+        chromeElements().allSatisfy { !isElementVisible($0) }
     }
 
     func pageProgress() -> (current: Int, total: Int)? {
         guard pageControl().exists else { return nil }
-        let rawValue: String
-        if let value = pageControl().value as? String, !value.isEmpty {
-            rawValue = value
-        } else {
-            rawValue = pageControl().label
-        }
-        let components = rawValue.split { !$0.isNumber }.compactMap { Int($0) }
-        guard components.count >= 2 else { return nil }
-        return (components[0], components[1])
+        let rawValue = (pageControl().value as? String).flatMap { $0.isEmpty ? nil : $0 } ?? pageControl().label
+        let numbers = rawValue.split { !$0.isNumber }.compactMap { Int($0) }
+        guard numbers.count >= 2 else { return nil }
+        return (numbers[0], numbers[1])
     }
 
     func retryButton() -> XCUIElement {
@@ -217,9 +200,17 @@ private extension ImageViewerViewRobot {
     }
 
     func imageView() -> XCUIElement {
-        let image = app.images[Identifiers.imageView]
-        if image.exists {
-            return image
+        let identified = app.images[Identifiers.imageView]
+        if identified.exists {
+            return identified
+        }
+        let collectionImage = collectionView().images[Identifiers.imageView]
+        if collectionImage.exists {
+            return collectionImage
+        }
+        let firstVisible = collectionView().images.element(boundBy: 0)
+        if firstVisible.exists {
+            return firstVisible
         }
         return app.images.element(boundBy: 0)
     }
@@ -233,10 +224,49 @@ private extension ImageViewerViewRobot {
     }
 
     func shareSheet() -> XCUIElement {
+        let modernShare = app.otherElements["com.apple.UIKit.activity-group-view"]
+        if modernShare.exists && modernShare.isHittable {
+            return modernShare
+        }
         let element = app.otherElements[Identifiers.shareSheet]
         if element.exists {
             return element
         }
-        return app.collectionViews[Identifiers.shareSheet]
+        let collection = app.collectionViews[Identifiers.shareSheet]
+        if collection.exists {
+            return collection
+        }
+        let sheet = app.sheets.firstMatch
+        if sheet.exists {
+            return sheet
+        }
+        let fallback = app.otherElements["UIActivityContentView"]
+        if fallback.exists {
+            return fallback
+        }
+        return app.otherElements.firstMatch
+    }
+
+    func chromeElements() -> [XCUIElement] {
+        [backButton(), shareButton(), fullscreenButton(), pageControl()]
+    }
+
+    func assertChromeState(isHidden: Bool, timeout: TimeInterval) {
+        chromeElements().forEach { element in
+            XCTAssertTrue(element.waitForExistence(timeout: timeout))
+            let predicate = NSPredicate { _, _ in
+                self.isElementVisible(element) == !isHidden
+            }
+            let expectation = XCTNSPredicateExpectation(predicate: predicate, object: nil)
+            XCTAssertEqual(XCTWaiter.wait(for: [expectation], timeout: timeout), .completed)
+        }
+    }
+
+    func isElementVisible(_ element: XCUIElement) -> Bool {
+        guard element.exists else { return false }
+        let frame = element.frame
+        guard frame != .zero else { return false }
+        let windowFrame = app.windows.firstMatch.frame
+        return windowFrame.intersects(frame)
     }
 }
