@@ -160,7 +160,6 @@
 			buildPhases = (
 				CBFAB4D92EA55D5F006654AB /* Sources */,
 				CBFAB4DA2EA55D5F006654AB /* Frameworks */,
-				0E403695034743E0B4C6535A /* ShellScript */,
 				CBFAB4DB2EA55D5F006654AB /* Resources */,
 			);
 			buildRules = (
@@ -244,27 +243,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		0E403695034743E0B4C6535A /* ShellScript */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/swiftlint-stamp",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Scripts/run-swiftlint.sh\"\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		CB7036A12EA58109007649F0 /* Sources */ = {

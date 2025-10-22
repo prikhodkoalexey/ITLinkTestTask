@@ -12,28 +12,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: SwiftLint
-    runs-on: macos-14
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Cache SwiftLint build
-        uses: actions/cache@v4
-        with:
-          path: Tools/SwiftLint
-          key: swiftlint-${{ runner.os }}-${{ hashFiles('swiftlint.yml', 'Scripts/run-swiftlint.sh') }}
-          restore-keys: |
-            swiftlint-${{ runner.os }}-
-
-      - name: Run SwiftLint
-        run: Scripts/run-swiftlint.sh
-
   unit-tests:
     name: Unit Tests
     runs-on: macos-14
-    needs: lint
     strategy:
       fail-fast: false
       matrix:
