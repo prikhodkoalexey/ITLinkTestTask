@@ -14,13 +14,26 @@ protocol ReachabilityService {
     func stopMonitoring()
 }
 
+protocol ReachabilityMonitoring: AnyObject {
+    var pathUpdateHandler: ((NWPath) -> Void)? { get set }
+    func start(queue: DispatchQueue)
+    func cancel()
+}
+
+extension NWPathMonitor: ReachabilityMonitoring {}
+
 final class DefaultReachabilityService: ReachabilityService {
-    private let monitor: NWPathMonitor
+    private let monitorFactory: () -> ReachabilityMonitoring
     private let queue: DispatchQueue
     private var handler: ((ReachabilityStatus) -> Void)?
+    private var monitor: ReachabilityMonitoring?
+    private var isMonitoring = false
 
-    init(monitor: NWPathMonitor = NWPathMonitor(), queue: DispatchQueue = .global(qos: .background)) {
-        self.monitor = monitor
+    init(
+        monitorFactory: @escaping () -> ReachabilityMonitoring = { NWPathMonitor() },
+        queue: DispatchQueue = .global(qos: .background)
+    ) {
+        self.monitorFactory = monitorFactory
         self.queue = queue
     }
 
@@ -28,18 +41,31 @@ final class DefaultReachabilityService: ReachabilityService {
 
     func startMonitoring(changeHandler: @escaping (ReachabilityStatus) -> Void) {
         handler = changeHandler
-        monitor.pathUpdateHandler = { [weak self] path in
+        let activeMonitor: ReachabilityMonitoring
+        if let existing = monitor {
+            activeMonitor = existing
+        } else {
+            let created = monitorFactory()
+            monitor = created
+            activeMonitor = created
+        }
+        activeMonitor.pathUpdateHandler = { [weak self] path in
             guard let self else { return }
             let status = self.map(path: path)
             self.currentStatus = status
-            changeHandler(status)
+            self.handler?(status)
         }
-        monitor.start(queue: queue)
+        if !isMonitoring {
+            activeMonitor.start(queue: queue)
+            isMonitoring = true
+        }
     }
 
     func stopMonitoring() {
-        monitor.cancel()
+        monitor?.cancel()
+        monitor = nil
         handler = nil
+        isMonitoring = false
     }
 
     private func map(path: NWPath) -> ReachabilityStatus {
