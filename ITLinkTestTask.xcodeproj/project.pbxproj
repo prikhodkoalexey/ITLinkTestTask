@@ -24,6 +24,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		CB5B16EE2EA8A42F00263185 /* Architecture.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Architecture.md; sourceTree = "<group>"; };
+		CB5B16F02EA8A42F00263185 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		CB7036A52EA58109007649F0 /* ITLinkTestTaskTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ITLinkTestTaskTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB7C39E32EA672E400AB4818 /* ITLinkTestTaskUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ITLinkTestTaskUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		CBFAB4DD2EA55D5F006654AB /* ITLinkTestTask.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ITLinkTestTask.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -85,6 +87,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CB5B16EF2EA8A42F00263185 /* Docs */ = {
+			isa = PBXGroup;
+			children = (
+				CB5B16EE2EA8A42F00263185 /* Architecture.md */,
+			);
+			path = Docs;
+			sourceTree = "<group>";
+		};
 		CBFAB4D42EA55D5F006654AB = {
 			isa = PBXGroup;
 			children = (
@@ -92,6 +102,8 @@
 				CB7036A62EA58109007649F0 /* ITLinkTestTaskTests */,
 				CB7C39E42EA672E400AB4818 /* ITLinkTestTaskUITests */,
 				CBFAB4DE2EA55D5F006654AB /* Products */,
+				CB5B16EF2EA8A42F00263185 /* Docs */,
+				CB5B16F02EA8A42F00263185 /* README.md */,
 			);
 			sourceTree = "<group>";
 		};
