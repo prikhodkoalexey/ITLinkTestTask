@@ -6,7 +6,7 @@
 
 "Дано: Текстовый файлик со ссылками на картинки (https://it-link.ru/test/images.txt).
 В каждой строке в нём могут быть ссылки на картинки, ссылки не на картинки, и совсем не ссылки."
-[Полное описание тестового тут](https://github.com/prikhodkoalexey/ITLinkTestTask/blob/main/Тестовое%20для%20Android%20и%20iOS.odtITLinkTestTask/blob/main/Тестовое%20для%20Android%20и%20iOS.odt)
+[Полное описание тестового тут](https://github.com/prikhodkoalexey/ITLinkTestTask/blob/main/Тестовое%20для%20Android%20и%20iOS.odt)
 
 ## Что сделано
 Сделаны все основные и бонусные пункты задания:
